@@ -1,0 +1,3357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ZOMBIE HOST — Educational Platform Game</title>
+<style>
+  :root {
+    --bg-dark: #132218;
+    --bg-panel: #1c3324;
+    --bg-card: #24402d;
+    --accent-lime: #8ce941;
+    --accent-lime-dark: #5fb31d;
+    --accent-gold: #ffd13b;
+    --accent-orange: #ff7b29;
+    --accent-pink: #ff4d88;
+    --accent-cyan: #38d9ff;
+    --accent-purple: #b366ff;
+    --text-light: #f4fbf5;
+    --text-muted: #b7d4be;
+    --border-thick: 3px solid #0d1710;
+    --shadow-pop: 0 6px 0 #0d1710;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: var(--bg-dark);
+    color: var(--text-light);
+    font-family: 'Trebuchet MS', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    touch-action: manipulation;
+  }
+
+  /* Screen Management */
+  .screen {
+    position: fixed;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 14px;
+    overflow-y: auto;
+    background: radial-gradient(circle at 50% 25%, #274a32 0%, #111f16 100%);
+    z-index: 10;
+    animation: fadeIn 0.25s ease-out;
+  }
+
+  .screen.active {
+    display: flex;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.985); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  /* Sound Button Floating */
+  #sound-toggle {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 100;
+    background: var(--bg-card);
+    color: var(--text-light);
+    border: var(--border-thick);
+    box-shadow: 0 3px 0 #0d1710;
+    border-radius: 12px;
+    padding: 8px 12px;
+    font-weight: 800;
+    font-size: 0.9rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  #sound-toggle:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 #0d1710;
+  }
+
+  /* Cartoon Buttons */
+  .btn {
+    background: linear-gradient(180deg, #9ef553 0%, #6ac926 100%);
+    color: #0e1f08;
+    border: var(--border-thick);
+    box-shadow: var(--shadow-pop);
+    border-radius: 16px;
+    padding: 13px 26px;
+    font-size: 1.1rem;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: transform 0.08s, filter 0.12s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn:hover:not(:disabled) {
+    filter: brightness(1.06);
+  }
+  .btn:active:not(:disabled) {
+    transform: translateY(4px);
+    box-shadow: 0 2px 0 #0d1710;
+  }
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    filter: grayscale(0.5);
+  }
+  .btn-gold {
+    background: linear-gradient(180deg, #ffe066 0%, #f5b800 100%);
+  }
+  .btn-cyan {
+    background: linear-gradient(180deg, #6be3ff 0%, #1cb5e0 100%);
+  }
+  .btn-orange {
+    background: linear-gradient(180deg, #ff9b54 0%, #f25c05 100%);
+    color: #fff;
+  }
+  .btn-sm {
+    padding: 8px 14px;
+    font-size: 0.85rem;
+    border-radius: 12px;
+    box-shadow: 0 3px 0 #0d1710;
+  }
+
+  /* Main Container Card */
+  .panel {
+    background: var(--bg-panel);
+    border: var(--border-thick);
+    box-shadow: 0 10px 0 #0b140e;
+    border-radius: 24px;
+    padding: 22px;
+    width: 100%;
+    max-width: 980px;
+    position: relative;
+  }
+
+  /* Title Typography */
+  .game-title {
+    font-size: clamp(2.4rem, 6vw, 4.4rem);
+    font-weight: 900;
+    text-align: center;
+    line-height: 1;
+    color: var(--accent-lime);
+    text-shadow: 0 5px 0 #0d1710, 0 0 28px rgba(140, 233, 65, 0.35);
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+  .game-subtitle {
+    text-align: center;
+    color: var(--accent-gold);
+    font-weight: 800;
+    font-size: clamp(0.95rem, 2.2vw, 1.25rem);
+    letter-spacing: 1px;
+    margin-bottom: 18px;
+  }
+
+  /* Menu Canvas Backdrop */
+  #menu-bg-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .menu-content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 760px;
+    width: 100%;
+    background: rgba(24, 44, 31, 0.9);
+    backdrop-filter: blur(6px);
+    border: var(--border-thick);
+    box-shadow: 0 10px 0 #0b140e;
+    border-radius: 28px;
+    padding: 26px 22px;
+  }
+
+  .pill-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin: 14px 0 20px;
+  }
+  .pill {
+    background: var(--bg-card);
+    border: 2px solid #0d1710;
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: var(--text-light);
+  }
+
+  /* Team Setup */
+  .team-count-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .count-chip {
+    background: var(--bg-card);
+    color: var(--text-light);
+    border: var(--border-thick);
+    border-radius: 12px;
+    padding: 8px 16px;
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: 0 4px 0 #0d1710;
+  }
+  .count-chip.active {
+    background: var(--accent-gold);
+    color: #161608;
+  }
+
+  .team-inputs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .team-input-card {
+    background: var(--bg-card);
+    border: var(--border-thick);
+    border-radius: 16px;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .team-badge-dot {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 2px solid #0d1710;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    color: #0d1710;
+  }
+  .team-input-card input {
+    width: 100%;
+    background: #132218;
+    border: 2px solid #3c6348;
+    border-radius: 10px;
+    padding: 8px 10px;
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 700;
+    outline: none;
+    user-select: text;
+    -webkit-user-select: text;
+  }
+  .team-input-card input:focus {
+    border-color: var(--accent-lime);
+  }
+
+  /* Turn Banner */
+  .turn-banner {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: #111e15;
+    border: var(--border-thick);
+    border-radius: 999px;
+    padding: 6px 18px;
+    margin-bottom: 12px;
+    font-weight: 900;
+    font-size: 0.95rem;
+  }
+
+  /* Host Intro Screen */
+  .host-showcase {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 20px;
+    align-items: center;
+    background: var(--bg-card);
+    border: var(--border-thick);
+    border-radius: 20px;
+    padding: 18px;
+    margin: 12px 0 20px;
+  }
+  @media (max-width: 680px) {
+    .host-showcase {
+      grid-template-columns: 1fr;
+      text-align: center;
+    }
+  }
+  .host-portrait-box {
+    width: 200px;
+    height: 180px;
+    margin: 0 auto;
+    background: #14261a;
+    border: var(--border-thick);
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  /* Organism Selection Screen */
+  #screen-select {
+    justify-content: flex-start;
+    padding-top: 14px;
+    padding-bottom: 24px;
+  }
+  .select-header {
+    text-align: center;
+    max-width: 960px;
+    width: 100%;
+    margin-bottom: 12px;
+  }
+  .select-question {
+    font-size: clamp(1.05rem, 2.5vw, 1.45rem);
+    font-weight: 900;
+    color: var(--accent-gold);
+    text-shadow: 0 2px 0 #0d1710;
+    margin-top: 4px;
+  }
+
+  .organisms-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    width: 100%;
+    max-width: 1060px;
+    margin-bottom: 16px;
+  }
+  @media (max-width: 880px) {
+    .organisms-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  @media (max-width: 540px) {
+    .organisms-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .org-card {
+    background: var(--bg-card);
+    border: var(--border-thick);
+    box-shadow: 0 5px 0 #0d1710;
+    border-radius: 18px;
+    padding: 12px;
+    cursor: pointer;
+    transition: transform 0.12s, border-color 0.12s, background 0.12s;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    position: relative;
+  }
+  .org-card:hover {
+    transform: translateY(-2px);
+    background: #2b4d36;
+  }
+  .org-card.selected {
+    border-color: var(--accent-gold);
+    background: #31593d;
+    box-shadow: 0 0 0 3px var(--accent-gold), 0 6px 0 #0d1710;
+  }
+  .org-card-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .org-art {
+    width: 68px;
+    height: 68px;
+    border-radius: 14px;
+    background: #132218;
+    border: 2px solid #0d1710;
+    flex-shrink: 0;
+  }
+  .group-badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 900;
+    padding: 3px 9px;
+    border-radius: 999px;
+    border: 2px solid #0d1710;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+  .group-fungi { background: #ff9f43; color: #1b0e00; }
+  .group-parasite { background: #ff5e8e; color: #1f000b; }
+  .group-virus { background: #48dbfb; color: #001b24; }
+
+  .org-name {
+    font-style: italic;
+    font-weight: 900;
+    font-size: 1rem;
+    color: #fff;
+    line-height: 1.2;
+  }
+  .org-desc {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    line-height: 1.35;
+  }
+
+  /* Gameplay Screen */
+  #screen-game {
+    padding: 0;
+    background: #0c1610;
+    overflow: hidden;
+  }
+  #game-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  #game-hud {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    right: 68px;
+    z-index: 20;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    pointer-events: none;
+  }
+  .hud-pill {
+    pointer-events: auto;
+    background: rgba(17, 32, 22, 0.88);
+    border: 2px solid #0d1710;
+    box-shadow: 0 3px 0 #0d1710;
+    border-radius: 12px;
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  #game-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    touch-action: none;
+  }
+
+  /* Touch Controls Overlay */
+  #touch-controls {
+    position: absolute;
+    bottom: 14px;
+    left: 14px;
+    right: 14px;
+    z-index: 25;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    pointer-events: none;
+  }
+  .touch-cluster {
+    display: flex;
+    gap: 12px;
+    pointer-events: none;
+  }
+  .touch-btn {
+    pointer-events: auto;
+    width: 72px;
+    height: 72px;
+    border-radius: 22px;
+    background: rgba(25, 48, 33, 0.8);
+    backdrop-filter: blur(4px);
+    border: 3px solid rgba(255, 255, 255, 0.45);
+    box-shadow: 0 5px 0 rgba(0, 0, 0, 0.6);
+    color: #fff;
+    font-size: 1.55rem;
+    font-weight: 900;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    touch-action: none;
+    cursor: pointer;
+    transition: transform 0.05s, background 0.08s;
+  }
+  .touch-btn span.lbl {
+    font-size: 0.65rem;
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+    opacity: 0.95;
+  }
+  .touch-btn.pressed, .touch-btn:active {
+    transform: translateY(3px) scale(0.96);
+    background: rgba(140, 233, 65, 0.82);
+    color: #0d1710;
+    border-color: #fff;
+  }
+  .touch-btn.btn-special {
+    background: rgba(56, 217, 255, 0.48);
+  }
+  .touch-btn.btn-jump {
+    width: 80px;
+    height: 80px;
+    background: rgba(255, 209, 59, 0.54);
+  }
+  @media (max-width: 540px) {
+    #touch-controls { bottom: 10px; left: 10px; right: 10px; }
+    .touch-cluster { gap: 8px; }
+    .touch-btn { width: 64px; height: 64px; font-size: 1.35rem; }
+    .touch-btn.btn-jump { width: 72px; height: 72px; }
+  }
+  .touch-btn span.lbl {
+    font-size: 0.62rem;
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+    opacity: 0.9;
+  }
+  .touch-btn.pressed, .touch-btn:active {
+    transform: translateY(3px) scale(0.96);
+    background: rgba(140, 233, 65, 0.78);
+    color: #0d1710;
+    border-color: #fff;
+  }
+  .touch-btn.btn-special {
+    background: rgba(56, 217, 255, 0.42);
+  }
+  .touch-btn.btn-jump {
+    width: 76px;
+    height: 76px;
+    background: rgba(255, 209, 59, 0.48);
+  }
+  @media (max-width: 480px) {
+    .touch-btn { width: 58px; height: 58px; font-size: 1.25rem; }
+    .touch-btn.btn-jump { width: 64px; height: 64px; }
+  }
+
+  /* Result Screen */
+  .result-banner {
+    text-align: center;
+    padding: 16px;
+    border-radius: 18px;
+    border: var(--border-thick);
+    margin: 12px 0;
+  }
+  .result-perfect { background: linear-gradient(135deg, #276926, #3fa336); }
+  .result-partial { background: linear-gradient(135deg, #8a5a00, #c98600); }
+  .result-wrong { background: linear-gradient(135deg, #75222d, #a83242); }
+
+  .science-box {
+    background: #14261a;
+    border: 2px solid #3c6649;
+    border-radius: 16px;
+    padding: 16px;
+    margin: 14px 0 20px;
+    line-height: 1.55;
+    font-size: 0.96rem;
+  }
+
+  /* Leaderboard Table */
+  .leaderboard-wrap {
+    width: 100%;
+    overflow-x: auto;
+    margin: 14px 0 20px;
+  }
+  table.lb-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--bg-card);
+    border-radius: 16px;
+    overflow: hidden;
+    font-size: 0.9rem;
+  }
+  table.lb-table th, table.lb-table td {
+    padding: 10px 8px;
+    text-align: center;
+    border-bottom: 2px solid #16291c;
+  }
+  table.lb-table th {
+    background: #111f16;
+    color: var(--accent-gold);
+    font-weight: 900;
+    font-size: 0.8rem;
+  }
+  table.lb-table tr.winner-row {
+    background: rgba(140, 233, 65, 0.18);
+  }
+  .champion-crown {
+    background: linear-gradient(90deg, #ffd13b, #ff9f43, #ffd13b);
+    color: #161200;
+    font-weight: 900;
+    text-align: center;
+    padding: 12px 18px;
+    border-radius: 16px;
+    border: var(--border-thick);
+    box-shadow: 0 5px 0 #0d1710;
+    margin-bottom: 12px;
+    font-size: clamp(0.95rem, 2.4vw, 1.25rem);
+  }
+  #confetti-canvas {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  /* Toast Notification inside Game */
+  #game-toast {
+    position: absolute;
+    top: 62px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(13, 23, 16, 0.92);
+    border: 2px solid var(--accent-gold);
+    color: var(--accent-gold);
+    padding: 8px 18px;
+    border-radius: 999px;
+    font-weight: 900;
+    font-size: 0.9rem;
+    z-index: 30;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s;
+    text-align: center;
+    max-width: 90%;
+  }
+  #game-toast.show { opacity: 1; }
+
+  /* Finale Mechanism Cutscene Overlay */
+  #finale-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(10, 20, 14, 0.86);
+    backdrop-filter: blur(5px);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 40;
+    padding: 16px;
+    animation: fadeIn 0.25s ease-out;
+  }
+  #finale-overlay.active {
+    display: flex;
+  }
+  .finale-card {
+    background: var(--bg-panel);
+    border: var(--border-thick);
+    box-shadow: 0 10px 0 #0a120c;
+    border-radius: 24px;
+    padding: 18px;
+    max-width: 540px;
+    width: 100%;
+    text-align: center;
+  }
+  #finale-canvas {
+    width: 100%;
+    max-width: 480px;
+    height: 240px;
+    background: #132419;
+    border: var(--border-thick);
+    border-radius: 16px;
+    margin: 10px auto;
+    display: block;
+  }
+</style>
+</head>
+<body>
+
+<button id="sound-toggle" aria-label="Toggle Sound">🔊 SFX ON</button>
+
+<!-- 1. MAIN MENU SCREEN -->
+<section id="screen-menu" class="screen active">
+  <canvas id="menu-bg-canvas"></canvas>
+  <div class="menu-content">
+    <div style="margin-bottom: 10px;">
+      <!-- Custom Cartoon SVG Logo Mascot -->
+      <svg width="110" height="92" viewBox="0 0 110 92" aria-hidden="true">
+        <ellipse cx="55" cy="82" rx="34" ry="7" fill="rgba(0,0,0,0.35)"/>
+        <ellipse cx="32" cy="62" rx="14" ry="10" fill="#d94e34" stroke="#0d1710" stroke-width="3"/>
+        <ellipse cx="54" cy="58" rx="11" ry="9" fill="#e85d43" stroke="#0d1710" stroke-width="3"/>
+        <circle cx="74" cy="52" r="13" fill="#ff6f52" stroke="#0d1710" stroke-width="3"/>
+        <circle cx="78" cy="49" r="5.5" fill="#fff" stroke="#0d1710" stroke-width="2"/>
+        <circle cx="79" cy="49" r="2.2" fill="#ff2e7e"/>
+        <path d="M70 40 C66 22, 46 16, 48 8" fill="none" stroke="#ffd13b" stroke-width="5" stroke-linecap="round"/>
+        <ellipse cx="48" cy="9" rx="9" ry="5" transform="rotate(-20 48 9)" fill="#ff7b29" stroke="#0d1710" stroke-width="2.5"/>
+        <path d="M48 65 L40 79 M55 66 L55 80 M62 64 L70 79" stroke="#0d1710" stroke-width="3" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <h1 class="game-title">ZOMBIE HOST</h1>
+    <div class="game-subtitle">SIX HOSTS • SIX ORGANISMS • THREE BIOLOGICAL GROUPS</div>
+    <p style="text-align:center; color:var(--text-muted); max-width:580px; line-height:1.5; font-size:0.96rem;">
+      Explore nature's wildest behavioral manipulators! Identify the exact fungus, parasite, or virus altering each host, then guide the infected host through 6 distinct cartoon platformer worlds.
+    </p>
+    <div class="pill-row">
+      <span class="pill">🍄 Fungi</span>
+      <span class="pill">🪱 Parasites</span>
+      <span class="pill">🦠 Virus</span>
+      <span class="pill">🏆 600 Scientific Points</span>
+    </div>
+    <button id="btn-play" class="btn" style="font-size:1.3rem; padding:16px 40px;">▶ PLAY</button>
+  </div>
+</section>
+
+<!-- 2. TEAM SETUP SCREEN -->
+<section id="screen-teams" class="screen">
+  <div class="panel">
+    <h2 style="text-align:center; font-size:1.8rem; color:var(--accent-lime); margin-bottom:6px;">PLAYERS & TEAMS SETUP</h2>
+    <p style="text-align:center; color:var(--text-muted); margin-bottom:16px;">Choose 1 to 5 players or teams to take turns across all 6 levels on this device.</p>
+
+    <div class="team-count-bar" id="team-count-buttons">
+      <button class="count-chip" data-count="1">1 Player</button>
+      <button class="count-chip active" data-count="2">2 Players</button>
+      <button class="count-chip" data-count="3">3 Players</button>
+      <button class="count-chip" data-count="4">4 Players</button>
+      <button class="count-chip" data-count="5">5 Players</button>
+    </div>
+
+    <div class="team-inputs-grid" id="team-inputs-container"></div>
+
+    <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+      <button id="btn-back-menu" class="btn btn-sm btn-cyan">← MENU</button>
+      <button id="btn-start-expedition" class="btn btn-gold">START EXPEDITION →</button>
+    </div>
+  </div>
+</section>
+
+<!-- 3. HOST INTRODUCTION SCREEN -->
+<section id="screen-host-intro" class="screen">
+  <div class="panel" style="max-width:780px; text-align:center;">
+    <div class="turn-banner" id="intro-turn-banner"></div>
+    <div style="color:var(--accent-gold); font-weight:900; letter-spacing:1px; font-size:0.95rem;" id="intro-level-tag">LEVEL 1 OF 6</div>
+    <h2 style="font-size:clamp(1.6rem, 4vw, 2.3rem); color:#fff; margin:4px 0 10px;" id="intro-host-title">THE ZOMBIE ANT</h2>
+
+    <div class="host-showcase">
+      <div class="host-portrait-box">
+        <canvas id="host-portrait-canvas" width="190" height="170"></canvas>
+      </div>
+      <div style="text-align:left;">
+        <div style="font-weight:900; color:var(--accent-lime); margin-bottom:6px; font-size:1.05rem;">OBSERVED HOST & BEHAVIOR:</div>
+        <p id="intro-host-desc" style="color:var(--text-light); line-height:1.5; margin-bottom:10px; font-size:0.98rem;"></p>
+        <div style="background:#132218; border-left:4px solid var(--accent-gold); padding:10px 12px; border-radius:8px; font-size:0.88rem; color:var(--text-muted);" id="intro-host-mechanic"></div>
+      </div>
+    </div>
+
+    <button id="btn-to-select" class="btn btn-gold">🔬 CHOOSE ORGANISM →</button>
+  </div>
+</section>
+
+<!-- 4. SIX-ORGANISM SELECTION SCREEN -->
+<section id="screen-select" class="screen">
+  <div class="select-header">
+    <div class="turn-banner" id="select-turn-banner" style="margin-bottom:6px;"></div>
+    <div class="select-question">WHICH ORGANISM IS RESPONSIBLE FOR INFECTING THIS HOST?</div>
+    <div style="font-size:0.83rem; color:var(--text-muted); margin-top:4px;">
+      Exact Match = <b>100 pts</b> • Same Biological Group = <b>50 pts</b> • Wrong Group = <b>0 pts</b>
+    </div>
+  </div>
+
+  <div class="organisms-grid" id="organisms-grid"></div>
+
+  <div style="display:flex; gap:12px; flex-wrap:wrap; justify-content:center;">
+    <button id="btn-back-intro" class="btn btn-sm btn-cyan">← REVIEW HOST</button>
+    <button id="btn-confirm-organism" class="btn" disabled>CONFIRM SELECTION ▶</button>
+  </div>
+</section>
+
+<!-- 5. PLATFORM GAMEPLAY SCREEN -->
+<section id="screen-game" class="screen">
+  <div id="game-wrapper">
+    <div id="game-hud">
+      <div class="hud-pill" id="hud-team">Team 1</div>
+      <div class="hud-pill" id="hud-level">Lvl 1: Zombie Ant</div>
+      <div class="hud-pill" id="hud-score">Sci Score: 0</div>
+      <div class="hud-pill" id="hud-spores">🪙 0</div>
+      <button class="hud-pill" id="btn-restart-level" style="cursor:pointer; background:#3a2818; color:#ffd13b;">↻ Restart</button>
+      <button class="hud-pill" id="btn-skip-level" style="cursor:pointer; background:#1c3d47; color:#6be3ff;" title="Classroom quick-complete">⏭ Complete</button>
+    </div>
+
+    <div id="game-toast"></div>
+    <canvas id="game-canvas"></canvas>
+
+    <!-- Finale Biological Mechanism Cutscene -->
+    <div id="finale-overlay">
+      <div class="finale-card">
+        <div style="color:var(--accent-gold); font-weight:900; font-size:0.85rem; letter-spacing:1px;">TRANSMISSION MECHANISM</div>
+        <h3 id="finale-title" style="font-size:1.35rem; color:var(--accent-lime); margin:4px 0;">FUNGAL SPORE DISPERSAL</h3>
+        <canvas id="finale-canvas" width="480" height="240"></canvas>
+        <p id="finale-caption" style="color:var(--text-light); font-size:0.92rem; line-height:1.4; margin-bottom:12px;"></p>
+        <button id="btn-finale-continue" class="btn btn-gold btn-sm">VIEW SCIENTIFIC RESULT →</button>
+      </div>
+    </div>
+
+    <!-- Touch & Pointer Controls -->
+    <div id="touch-controls">
+      <div class="touch-cluster">
+        <button class="touch-btn" id="touch-left" aria-label="Move Left">◀<span class="lbl">LEFT</span></button>
+        <button class="touch-btn" id="touch-right" aria-label="Move Right">▶<span class="lbl">RIGHT</span></button>
+      </div>
+      <div class="touch-cluster">
+        <button class="touch-btn btn-special" id="touch-special" aria-label="Special Ability">⚡<span class="lbl" id="special-lbl">SKILL</span></button>
+        <button class="touch-btn btn-jump" id="touch-jump" aria-label="Jump">▲<span class="lbl">JUMP</span></button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 6. RESULT & SCIENTIFIC EXPLANATION SCREEN -->
+<section id="screen-result" class="screen">
+  <div class="panel" style="max-width:780px;">
+    <div style="text-align:center;">
+      <div class="turn-banner" id="res-turn-banner"></div>
+    </div>
+
+    <div class="result-banner" id="res-banner-box">
+      <div style="font-size:0.9rem; font-weight:900; letter-spacing:1px; opacity:0.9;" id="res-points-earned">+100 POINTS</div>
+      <h2 style="font-size:clamp(1.4rem, 3.5vw, 2rem); margin:4px 0;" id="res-match-title">PERFECT MATCH!</h2>
+      <div style="font-size:0.92rem;" id="res-selection-summary"></div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:10px; margin-bottom:10px;">
+      <div style="background:var(--bg-card); padding:10px 14px; border-radius:12px; border:2px solid #0d1710;">
+        <div style="font-size:0.75rem; color:var(--text-muted); font-weight:800;">HOST</div>
+        <div style="font-weight:900; font-size:1.05rem;" id="res-host-name">Ant</div>
+      </div>
+      <div style="background:var(--bg-card); padding:10px 14px; border-radius:12px; border:2px solid #0d1710;">
+        <div style="font-size:0.75rem; color:var(--text-muted); font-weight:800;">RESPONSIBLE ORGANISM</div>
+        <div style="font-weight:900; font-style:italic; font-size:1.05rem; color:var(--accent-lime);" id="res-correct-org">Ophiocordyceps unilateralis</div>
+      </div>
+      <div style="background:var(--bg-card); padding:10px 14px; border-radius:12px; border:2px solid #0d1710;">
+        <div style="font-size:0.75rem; color:var(--text-muted); font-weight:800;">BIOLOGICAL GROUP</div>
+        <div style="font-weight:900; font-size:1.05rem;" id="res-bio-group">FUNGI</div>
+      </div>
+    </div>
+
+    <div id="res-retry-notice" style="display:none; background:rgba(255, 77, 136, 0.2); border:2px solid #ff4d88; border-radius:12px; padding:10px 14px; margin-bottom:10px; font-weight:800; color:#ffb3cb; text-align:center;">
+      ⚠️ Wrong biological group! You must retry this level and pick an organism from the right biological group before advancing.
+    </div>
+
+    <div class="science-box">
+      <div style="font-weight:900; color:var(--accent-gold); margin-bottom:6px;">🧬 BIOLOGICAL MECHANISM EXPLAINED:</div>
+      <p id="res-science-text"></p>
+    </div>
+
+    <div style="text-align:center;">
+      <button id="btn-next-turn" class="btn btn-gold">NEXT TURN →</button>
+    </div>
+  </div>
+</section>
+
+<!-- 7. FINAL LEADERBOARD SCREEN -->
+<section id="screen-leaderboard" class="screen">
+  <canvas id="confetti-canvas"></canvas>
+  <div class="panel" style="max-width:960px; position:relative; z-index:10;">
+    <div style="text-align:center; margin-bottom:4px;">
+      <svg width="76" height="68" viewBox="0 0 80 72" aria-hidden="true">
+        <path d="M24 10 H56 V28 C56 40 48 46 40 46 C32 46 24 40 24 28 Z" fill="#ffd13b" stroke="#0d1710" stroke-width="3"/>
+        <path d="M24 15 H14 C11 15 10 26 18 30 L24 32" fill="none" stroke="#ffd13b" stroke-width="4" stroke-linecap="round"/>
+        <path d="M56 15 H66 C69 15 70 26 62 30 L56 32" fill="none" stroke="#ffd13b" stroke-width="4" stroke-linecap="round"/>
+        <rect x="36" y="46" width="8" height="12" fill="#f5b800" stroke="#0d1710" stroke-width="2.5"/>
+        <rect x="24" y="58" width="32" height="9" rx="4" fill="#8ce941" stroke="#0d1710" stroke-width="2.5"/>
+        <polygon points="40,18 42.5,24 49,24.5 44,28.5 45.5,35 40,31.5 34.5,35 36,28.5 31,24.5 37.5,24" fill="#fff"/>
+      </svg>
+    </div>
+    <h2 style="text-align:center; font-size:clamp(1.7rem, 4vw, 2.4rem); color:var(--accent-lime); margin-bottom:8px;">FINAL SCIENTIFIC LEADERBOARD</h2>
+    <div class="champion-crown" id="champion-banner">🏆 MASTER PARASITE — THE ULTIMATE HOST MANIPULATOR!</div>
+
+    <div class="leaderboard-wrap">
+      <table class="lb-table">
+        <thead>
+          <tr>
+            <th>RANK</th>
+            <th style="text-align:left;">PLAYER / TEAM</th>
+            <th>L1<br>Ant</th>
+            <th>L2<br>Fly</th>
+            <th>L3<br>Rodent</th>
+            <th>L4<br>Snail</th>
+            <th>L5<br>Cricket</th>
+            <th>L6<br>Caterpillar</th>
+            <th>PERFECT<br>(100)</th>
+            <th>PARTIAL<br>(50)</th>
+            <th>WRONG<br>(0)</th>
+            <th>SCI<br>/ 600</th>
+            <th>COINS<br>(+1)</th>
+            <th>GRAND<br>TOTAL</th>
+          </tr>
+        </thead>
+        <tbody id="lb-tbody"></tbody>
+      </table>
+    </div>
+
+    <div style="text-align:center;">
+      <button id="btn-play-again" class="btn">🔄 PLAY AGAIN</button>
+    </div>
+  </div>
+</section>
+
+<script>
+/* ==========================================================================
+   1. SOUND ENGINE (Web Audio API — Zero External Dependencies)
+   ========================================================================== */
+const SoundFX = (() => {
+  let ctx = null;
+  let muted = false;
+
+  function ensureCtx() {
+    if (!ctx) {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) ctx = new AudioCtx();
+    }
+    if (ctx && ctx.state === 'suspended') ctx.resume();
+  }
+
+  function playTone(freq, type, duration, vol = 0.14, slideTo = null, delay = 0) {
+    if (muted) return;
+    try {
+      ensureCtx();
+      if (!ctx) return;
+      const now = ctx.currentTime + delay;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, now);
+      if (slideTo) {
+        osc.frequency.exponentialRampToValueAtTime(slideTo, now + duration);
+      }
+      gain.gain.setValueAtTime(vol, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + duration);
+    } catch (e) {}
+  }
+
+  return {
+    toggle() {
+      muted = !muted;
+      return !muted;
+    },
+    click() { playTone(520, 'triangle', 0.08, 0.12, 680); },
+    select() { playTone(440, 'sine', 0.1, 0.13, 660); },
+    jump() { playTone(240, 'square', 0.16, 0.08, 520); },
+    flutter() { playTone(380, 'triangle', 0.09, 0.09, 490); },
+    collect() {
+      playTone(660, 'sine', 0.09, 0.12, 880, 0);
+      playTone(880, 'sine', 0.14, 0.12, 1180, 0.07);
+    },
+    hurt() {
+      playTone(220, 'sawtooth', 0.25, 0.14, 90);
+    },
+    goal() {
+      [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
+        playTone(f, 'triangle', 0.22, 0.14, null, i * 0.09);
+      });
+    },
+    victory() {
+      const notes = [523.25, 659.25, 783.99, 1046.5, 783.99, 1046.5];
+      notes.forEach((f, i) => {
+        playTone(f, 'triangle', 0.24, 0.15, null, i * 0.12);
+      });
+    }
+  };
+})();
+
+/* ==========================================================================
+   2. BIOLOGICAL DATA & LEVEL DEFINITIONS
+   ========================================================================== */
+const BIO_GROUPS = {
+  FUNGI: 'FUNGI',
+  PARASITE: 'PARASITES',
+  VIRUS: 'VIRUS',
+  BACTERIUM: 'BACTERIA'
+};
+
+const ORGANISMS = [
+  {
+    id: 'ophiocordyceps',
+    name: 'Ophiocordyceps unilateralis',
+    group: BIO_GROUPS.FUNGI,
+    groupClass: 'group-fungi',
+    shortDesc: 'A specialized entomopathogenic fungus that grows fruiting stalks from insect hosts.',
+    color: '#ff9f43'
+  },
+  {
+    id: 'entomophthora',
+    name: 'Entomophthora muscae',
+    group: BIO_GROUPS.FUNGI,
+    groupClass: 'group-fungi',
+    shortDesc: 'A "fly-destroyer" fungus that triggers summit disease before releasing microscopic spores.',
+    color: '#ffbe76'
+  },
+  {
+    id: 'toxoplasma',
+    name: 'Toxoplasma gondii',
+    group: BIO_GROUPS.PARASITE,
+    groupClass: 'group-parasite',
+    shortDesc: 'A single-celled protozoan parasite that alters risk-avoidance responses in intermediate hosts.',
+    color: '#ff5e8e'
+  },
+  {
+    id: 'leucochloridium',
+    name: 'Leucochloridium paradoxum',
+    group: BIO_GROUPS.PARASITE,
+    groupClass: 'group-parasite',
+    shortDesc: 'A parasitic flatworm (trematode) forming colourful pulsating broodsacs inside host tentacles.',
+    color: '#ff79a8'
+  },
+  {
+    id: 'spinochordodes',
+    name: 'Spinochordodes tellinii',
+    group: BIO_GROUPS.PARASITE,
+    groupClass: 'group-parasite',
+    shortDesc: 'A parasitic horsehair worm that develops inside terrestrial insects and emerges in water.',
+    color: '#e056fd'
+  },
+  {
+    id: 'baculovirus',
+    name: 'Baculovirus',
+    group: BIO_GROUPS.VIRUS,
+    groupClass: 'group-virus',
+    shortDesc: 'An insect-infecting DNA virus that alters host climbing genes before liquefying host tissues.',
+    color: '#48dbfb'
+  }
+];
+
+const BONUS_ORGANISM = {
+  id: 'yersinia',
+  name: 'Yersinia pestis',
+  group: BIO_GROUPS.BACTERIUM,
+  groupClass: 'group-virus',
+  shortDesc: 'A rod-shaped bacterium that forms a sticky biofilm blocking the flea’s digestive valve, causing frantic feeding.',
+  color: '#a3cb38'
+};
+
+const LEVELS = [
+  {
+    num: 1,
+    title: 'LEVEL 1 — THE ZOMBIE ANT',
+    hostName: 'Ant',
+    correctOrgId: 'ophiocordyceps',
+    theme: 'forest',
+    specialLabel: 'CLIMB',
+    introDesc: 'In a lush tropical forest, this worker ant abandons its colony trail, climbs upward along plant stems, and clamps its mandibles tightly onto the underside of an elevated leaf.',
+    mechanicTip: 'MOVEMENT: Agile running & jumping. Hold UP / JUMP near vertical stems to climb high into the canopy!',
+    goalLabel: 'Reach the Elevated Spore Leaf!',
+    finaleTitle: 'DEATH-GRIP & SPORE SHOWER',
+    finaleCaption: 'Locked onto an elevated leaf vein, the ant becomes an anchor as a fungal fruiting stalk erupts and showers spores onto ants below.',
+    scienceExplanation: 'Ophiocordyceps unilateralis (Fungus) alters ant muscle contractions and daily rhythms, driving it to climb and clamp onto an elevated leaf vein so a growing fungal stalk can shower spores onto ants below.'
+  },
+  {
+    num: 2,
+    title: 'LEVEL 2 — THE INFECTED FLY',
+    hostName: 'Fly',
+    correctOrgId: 'entomophthora',
+    theme: 'garden',
+    specialLabel: 'FLUTTER',
+    introDesc: 'In a sunlit flower garden, this housefly buzzes upward to the highest blossoms, raises its wings into a rigid posture, and anchors itself above open foliage.',
+    mechanicTip: 'MOVEMENT: Aerial wing-flutter! Tap JUMP repeatedly or hold SKILL (E) in mid-air to hover and gain altitude.',
+    goalLabel: 'Reach the High Blossom Perch!',
+    finaleTitle: 'SUMMIT POSE & SPORE CANNONS',
+    finaleCaption: 'Anchored to a high blossom with raised wings, the fungus launches a halo of sticky spores from the fly’s abdomen.',
+    scienceExplanation: 'Entomophthora muscae (Fungus) triggers "summit disease" at dusk, causing the fly to perch high, glue its mouthparts down, and raise its wings so fungal cannons can launch sticky spores onto other flies.'
+  },
+  {
+    num: 3,
+    title: 'LEVEL 3 — THE FEARLESS RODENT',
+    hostName: 'Rodent',
+    correctOrgId: 'toxoplasma',
+    theme: 'tunnels',
+    specialLabel: 'DASH',
+    introDesc: 'Darting through forest burrows and mossy logs, this rodent has lost its natural fear of feline scent and boldly approaches a waiting cat.',
+    mechanicTip: 'MOVEMENT: Fast sprinting & nimble jumps. Press SKILL (E) for a quick horizontal dash across gaps!',
+    goalLabel: 'Reach the Feline Predator!',
+    finaleTitle: 'LOSS OF PREDATOR FEAR',
+    finaleCaption: 'Without its natural fear of cat scent, the rodent approaches a feline—allowing the parasite to reach its definitive host.',
+    scienceExplanation: 'Toxoplasma gondii (Parasite) forms microscopic cysts in the rodent’s brain that reduce innate fear of cat odors, increasing predation by felines—the only host where the parasite can reproduce sexually.'
+  },
+  {
+    num: 4,
+    title: 'LEVEL 4 — THE ZOMBIE SNAIL',
+    hostName: 'Snail',
+    correctOrgId: 'leucochloridium',
+    theme: 'snailgarden',
+    specialLabel: 'CLIMB',
+    introDesc: 'Instead of hiding in cool shade, this garden snail crawls onto exposed sunlit leaves while bright, banded, pulsating sacs throb inside its swollen eyestalks.',
+    mechanicTip: 'MOVEMENT: Steady gliding & climbing up plant stalks. Watch out for thorny brambles!',
+    goalLabel: 'Reach the Sunlit Bird Perch!',
+    finaleTitle: 'CATERPILLAR MIMICRY FOR BIRDS',
+    finaleCaption: 'On an exposed sunlit leaf, the snail’s swollen, pulsating eyestalks mimic wriggling caterpillars and attract a hungry bird.',
+    scienceExplanation: 'Leucochloridium paradoxum (Parasite) packs colourful, pulsating broodsacs into the snail’s eyestalks and draws the snail into bright sunlight, making the tentacles look like caterpillars to attract birds.'
+  },
+  {
+    num: 5,
+    title: 'LEVEL 5 — THE WATER-SEEKING CRICKET',
+    hostName: 'Cricket',
+    correctOrgId: 'spinochordodes',
+    theme: 'swamp',
+    specialLabel: 'HIGH HOP',
+    introDesc: 'Usually a land-dwelling insect that avoids deep water, this cricket bounds tirelessly across swamp stones and reeds straight toward an open pond.',
+    mechanicTip: 'MOVEMENT: Powerful spring-loaded jumps! Press SKILL (E) in mid-air for a double-spring boost!',
+    goalLabel: 'Leap into the Swamp Pond!',
+    finaleTitle: 'AQUATIC EMERGENCE',
+    finaleCaption: 'As soon as the cricket leaps into the pond water, the long adult horsehair worm coils out to swim and reproduce.',
+    scienceExplanation: 'Spinochordodes tellinii (Parasite) alters central nervous signaling in terrestrial crickets, driving them to jump into water so the adult horsehair worm can emerge and reproduce in its aquatic habitat.'
+  },
+  {
+    num: 6,
+    title: 'LEVEL 6 — THE CLIMBING CATERPILLAR',
+    hostName: 'Caterpillar',
+    correctOrgId: 'baculovirus',
+    theme: 'jungle',
+    specialLabel: 'CLIMB',
+    introDesc: 'Deep in a lush jungle, this caterpillar ignores leaves at ground level and crawls relentlessly up towering vines toward the top of the canopy.',
+    mechanicTip: 'MOVEMENT: Rhythmic crawling & vine climbing. Hold JUMP / UP on hanging vines to ascend!',
+    goalLabel: 'Climb to the Top Canopy Leaf!',
+    finaleTitle: 'TREE-TOP VIRAL RAIN',
+    finaleCaption: 'High in the jungle canopy, the virus dissolves host tissues and rains millions of viral particles onto lower leaves.',
+    scienceExplanation: 'Baculovirus (Virus) uses a viral gene to disrupt molting hormones, forcing the caterpillar to climb to the tree-top where its liquefied body rains viral particles onto foliage eaten by new hosts.'
+  },
+  {
+    num: 7,
+    isBonus: true,
+    title: 'BONUS LEVEL — THE BLOCKED FLEA',
+    hostName: 'Flea',
+    correctOrgId: 'yersinia',
+    theme: 'furforest',
+    specialLabel: 'SUPER LEAP',
+    introDesc: 'UNLOCKED AT 600+ POINTS! A sticky bacterial biofilm blocks this flea’s digestive valve, preventing blood from reaching its stomach and driving frantic, repeated biting.',
+    mechanicTip: 'MOVEMENT: Explosive flea springs! Launch sky-high across giant fur hairs & press SKILL (E) for a mid-air flea vault!',
+    goalLabel: 'Reach the Mammalian Skin Surface!',
+    finaleTitle: 'BIOFILM BLOCKAGE & TRANSMISSION',
+    finaleCaption: 'Because a bacterial plug blocks its gut, the starving flea repeatedly tries to feed and regurgitates bacteria into a new mammalian host.',
+    scienceExplanation: 'Yersinia pestis (Bacterium) forms a dense biofilm inside the flea’s foregut (proventriculus), starving the flea so it bites repeatedly and regurgitates bacteria into new hosts.'
+  }
+];
+
+const TEAM_COLORS = ['#8ce941', '#38d9ff', '#ffd13b', '#ff5e8e', '#b366ff'];
+
+/* ==========================================================================
+   3. GLOBAL GAME STATE & NAVIGATION
+   ========================================================================== */
+const state = {
+  teamCount: 2,
+  teams: [],
+  currentLevelIdx: 0,
+  currentTeamIdx: 0,
+  selectedOrgId: null,
+  lastTurnResult: null,
+  levelCompletedViaSkip: false
+};
+
+function showScreen(screenId) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const target = document.getElementById(screenId);
+  if (target) target.classList.add('active');
+}
+
+document.getElementById('sound-toggle').addEventListener('click', () => {
+  const on = SoundFX.toggle();
+  document.getElementById('sound-toggle').textContent = on ? '🔊 SFX ON' : '🔇 SFX OFF';
+});
+
+/* ==========================================================================
+   4. CUSTOM CARTOON ILLUSTRATIONS (HOSTS & ORGANISMS)
+   ========================================================================== */
+function drawCartoonHost(ctx, hostName, x, y, scale = 1, time = 0, facing = 1) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(scale * facing, scale);
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+
+  // Ground contact shadow
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+  ctx.beginPath();
+  ctx.ellipse(0, 17, 18, 4.5, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = '#0d1710';
+  ctx.lineWidth = 2.6;
+
+  if (hostName === 'Ant') {
+    const legSwing = Math.sin(time * 12) * 4.5;
+    // Back legs (darker shade for depth)
+    ctx.strokeStyle = '#3b150e';
+    ctx.beginPath();
+    ctx.moveTo(-4, 5); ctx.lineTo(-11, 15 - legSwing);
+    ctx.moveTo(2, 5); ctx.lineTo(3, 16 + legSwing);
+    ctx.moveTo(7, 4); ctx.lineTo(15, 14 - legSwing);
+    ctx.stroke();
+
+    // Front articulated legs
+    ctx.strokeStyle = '#0d1710';
+    ctx.beginPath();
+    ctx.moveTo(-6, 6); ctx.lineTo(-15, 16 + legSwing);
+    ctx.moveTo(0, 6); ctx.lineTo(-1, 17 - legSwing);
+    ctx.moveTo(6, 6); ctx.lineTo(14, 16 + legSwing);
+    ctx.stroke();
+
+    // Abdomen (gaster) with shading & specular highlight
+    const abdGrad = ctx.createRadialGradient(-16, -2, 2, -14, 2, 13);
+    abdGrad.addColorStop(0, '#ff886b');
+    abdGrad.addColorStop(0.55, '#d94e34');
+    abdGrad.addColorStop(1, '#8c2818');
+    ctx.fillStyle = abdGrad;
+    ctx.beginPath(); ctx.ellipse(-14, 2, 11, 7.5, -0.22, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    // Gaster stripes
+    ctx.strokeStyle = 'rgba(70, 15, 8, 0.45)';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(-14, -5); ctx.quadraticCurveTo(-11, 2, -14, 9);
+    ctx.moveTo(-19, -4); ctx.quadraticCurveTo(-16, 2, -19, 8);
+    ctx.stroke();
+
+    // Thorax
+    ctx.strokeStyle = '#0d1710';
+    ctx.lineWidth = 2.6;
+    ctx.fillStyle = '#e85d43';
+    ctx.beginPath(); ctx.ellipse(0, 0, 7.5, 6, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+    // Head with glossy highlight
+    const headGrad = ctx.createRadialGradient(10, -6, 1, 12, -3, 10);
+    headGrad.addColorStop(0, '#ff9c82');
+    headGrad.addColorStop(1, '#e05238');
+    ctx.fillStyle = headGrad;
+    ctx.beginPath(); ctx.arc(12, -3, 8.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+    // Mandibles
+    ctx.fillStyle = '#ffd166';
+    ctx.beginPath();
+    ctx.moveTo(18, 1); ctx.quadraticCurveTo(25, 2, 22, 6); ctx.lineTo(17, 4);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+
+    // Expressive swirling infected eye & antennae
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(15, -5, 3.8, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#ff2e7e';
+    ctx.beginPath(); ctx.arc(16, -5, 1.8, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(15, -10); ctx.quadraticCurveTo(20, -19, 26, -15);
+    ctx.moveTo(11, -10); ctx.quadraticCurveTo(14, -20, 20, -18);
+    ctx.stroke();
+
+    // Tiny emerging fungal sprout hint on head
+    ctx.strokeStyle = '#ffd13b';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(9, -11); ctx.quadraticCurveTo(6, -18, 11, -21); ctx.stroke();
+  } else if (hostName === 'Fly') {
+    const wingFlap = Math.sin(time * 26) * 8;
+    // Back Wing
+    ctx.fillStyle = 'rgba(180, 230, 255, 0.55)';
+    ctx.beginPath();
+    ctx.ellipse(-7, -11 - wingFlap * 0.25, 12, 5.5, -0.65, 0, Math.PI * 2);
+    ctx.fill(); ctx.stroke();
+
+    // Fuzzy legs
+    ctx.beginPath();
+    ctx.moveTo(-3, 7); ctx.lineTo(-9, 15);
+    ctx.moveTo(2, 7); ctx.lineTo(1, 16);
+    ctx.moveTo(7, 6); ctx.lineTo(12, 14);
+    ctx.stroke();
+
+    // Striped iridescent abdomen
+    const flyAbd = ctx.createLinearGradient(-20, -4, 0, 10);
+    flyAbd.addColorStop(0, '#59748c');
+    flyAbd.addColorStop(1, '#263645');
+    ctx.fillStyle = flyAbd;
+    ctx.beginPath(); ctx.ellipse(-10, 3, 11.5, 8.5, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    // White fungal bands emerging between abdominal segments
+    ctx.strokeStyle = 'rgba(255, 250, 220, 0.85)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-10, -5); ctx.lineTo(-10, 11);
+    ctx.moveTo(-15, -4); ctx.lineTo(-15, 10);
+    ctx.stroke();
+
+    // Thorax
+    ctx.strokeStyle = '#0d1710';
+    ctx.lineWidth = 2.6;
+    ctx.fillStyle = '#486073';
+    ctx.beginPath(); ctx.arc(3, 1, 8.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+    // Front Iridescent Wing with Veins
+    ctx.fillStyle = 'rgba(225, 248, 255, 0.85)';
+    ctx.beginPath();
+    ctx.ellipse(-3, -10 + wingFlap * 0.3, 14, 6.5 - Math.abs(wingFlap) * 0.18, -0.35, 0, Math.PI * 2);
+    ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = 'rgba(90, 150, 180, 0.5)';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(2, -7); ctx.lineTo(-12, -12 + wingFlap * 0.2); ctx.stroke();
+
+    // Giant Faceted Red Compound Eye
+    ctx.strokeStyle = '#0d1710';
+    ctx.lineWidth = 2.6;
+    const eyeGrad = ctx.createRadialGradient(13, -3, 1, 11, -1, 8);
+    eyeGrad.addColorStop(0, '#ff8fa3');
+    eyeGrad.addColorStop(0.5, '#ff2a55');
+    eyeGrad.addColorStop(1, '#9e0025');
+    ctx.fillStyle = eyeGrad;
+    ctx.beginPath(); ctx.arc(11, -1, 7.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.75)';
+    ctx.beginPath(); ctx.ellipse(13, -4, 2.5, 1.5, -0.4, 0, Math.PI * 2); ctx.fill();
+  } else if (hostName === 'Rodent') {
+    const bounce = Math.abs(Math.sin(time * 13)) * 2.5;
+    // Curled Pink Tail
+    ctx.strokeStyle = '#0d1710';
+    ctx.lineWidth = 5;
+    ctx.beginPath(); ctx.moveTo(-16, 4); ctx.quadraticCurveTo(-29, -4 + bounce, -24, -13); ctx.stroke();
+    ctx.strokeStyle = '#ff9ebb';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(-16, 4); ctx.quadraticCurveTo(-29, -4 + bounce, -24, -13); ctx.stroke();
+
+    // Little paws
+    ctx.strokeStyle = '#0d1710';
+    ctx.lineWidth = 2.4;
+    ctx.fillStyle = '#ffb3c6';
+    ctx.beginPath(); ctx.ellipse(-8, 13, 4.5, 2.5, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(9, 13, 4.5, 2.5, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+    // Plump shaded fur body
+    const bodyGrad = ctx.createRadialGradient(-2, -3 - bounce * 0.5, 3, -2, 3 - bounce * 0.5, 18);
+    bodyGrad.addColorStop(0, '#cbd5e1');
+    bodyGrad.addColorStop(0.7, '#94a3b8');
+    bodyGrad.addColorStop(1, '#64748b');
+    ctx.fillStyle = bodyGrad;
+    ctx.beginPath(); ctx.ellipse(-2, 3 - bounce * 0.5, 16.5, 11.5, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+    // Snout & Head
+    ctx.fillStyle = '#cbd5e1';
+    ctx.beginPath(); ctx.ellipse(12, 1 - bounce * 0.5, 10.5, 8.2, 0.1, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+    // Big Round Ear with inner pink shell
+    ctx.fillStyle = '#94a3b8';
+    ctx.beginPath(); ctx.arc(6, -8 - bounce * 0.5, 6.8, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#ff9ebb';
+    ctx.beginPath(); ctx.arc(6.5, -8 - bounce * 0.5, 4, 0, Math.PI * 2); ctx.fill();
+
+    // Fearless glowing eye, twitching nose & whiskers
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(15, -1.5 - bounce * 0.5, 3.2, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#0d1710';
+    ctx.beginPath(); ctx.arc(15.8, -1.5 - bounce * 0.5, 1.7, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#ff5e8e';
+    ctx.beginPath(); ctx.arc(22.5, 2 - bounce * 0.5, 2.8, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+    ctx.strokeStyle = 'rgba(13, 23, 16, 0.65)';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(19, 3 - bounce * 0.5); ctx.lineTo(27, 1 - bounce * 0.5);
+    ctx.moveTo(19, 4.5 - bounce * 0.5); ctx.lineTo(27, 5.5 - bounce * 0.5);
+    ctx.stroke();
+  } else if (hostName === 'Snail') {
+    const pulse = Math.sin(time * 9) * 2.5;
+    // Slime trail shimmer
+    ctx.fillStyle = 'rgba(144, 224, 239, 0.45)';
+    ctx.beginPath(); ctx.ellipse(-10, 14, 24, 3, 0, 0, Math.PI * 2); ctx.fill();
+
+    // Muscular Slime Foot with belly shading
+    const footGrad = ctx.createLinearGradient(0, 2, 0, 15);
+    footGrad.addColorStop(0, '#ffe066');
+    footGrad.addColorStop(1, '#e09f3e');
+    ctx.fillStyle = footGrad;
+    ctx.beginPath();
+    ctx.roundRect(-21, 4, 44, 10.5, 6);
+    ctx.fill(); ctx.stroke();
+
+    // Detailed Spiral Shell with highlights
+    const shellGrad = ctx.createRadialGradient(-8, -6, 2, -5, -2, 15);
+    shellGrad.addColorStop(0, '#ffba5a');
+    shellGrad.addColorStop(0.6, '#d9822b');
+    shellGrad.addColorStop(1, '#8c4a12');
+    ctx.fillStyle = shellGrad;
+    ctx.beginPath(); ctx.arc(-5, -2, 13.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = '#5c2d06';
+    ctx.lineWidth = 2.2;
+    ctx.beginPath(); ctx.arc(-5, -2, 8.5, 0.2, Math.PI * 1.85); ctx.stroke();
+    ctx.beginPath(); ctx.arc(-5, -2, 4, 0.5, Math.PI * 1.9); ctx.stroke();
+
+    // Swollen Pulsating Eyestalks (Leucochloridium banded broodsacs)
+    ctx.strokeStyle = '#0d1710';
+    ctx.lineWidth = 2.5;
+    ctx.fillStyle = '#8ce941';
+    ctx.beginPath(); ctx.ellipse(13, -10, 4.8 + pulse * 0.35, 10, 0.18, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#ff4d88';
+    ctx.fillRect(9.5, -13, 7, 3.2);
+    ctx.fillRect(9.5, -7, 7, 3.2);
+
+    ctx.fillStyle = '#a3ff57';
+    ctx.beginPath(); ctx.ellipse(20, -9, 4.8 - pulse * 0.35, 10, 0.35, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#ff4d88';
+    ctx.fillRect(16.5, -12, 7, 3.2);
+    ctx.fillRect(16.5, -6, 7, 3.2);
+
+    // Eyestalk Tips
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(14, -19, 2.8, 0, Math.PI * 2); ctx.arc(22, -18, 2.8, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  } else if (hostName === 'Cricket') {
+    const legBend = Math.sin(time * 11) * 3.5;
+    // Folded translucent wings on back
+    ctx.fillStyle = '#a3cb38';
+    ctx.beginPath(); ctx.ellipse(-4, -2, 14, 5.5, -0.15, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+    // Segmented Thorax & Head
+    const bodyGrad = ctx.createLinearGradient(0, -6, 0, 10);
+    bodyGrad.addColorStop(0, '#8ce941');
+    bodyGrad.addColorStop(1, '#4a8c1c');
+    ctx.fillStyle = bodyGrad;
+    ctx.beginPath(); ctx.ellipse(-1, 3, 15.5, 7.5, -0.08, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#badc58';
+    ctx.beginPath(); ctx.arc(14, -1, 7.2, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+    // Front walking legs
+    ctx.beginPath();
+    ctx.moveTo(6, 7); ctx.lineTo(10, 15);
+    ctx.moveTo(11, 6); ctx.lineTo(16, 15);
+    ctx.stroke();
+
+    // Muscular Spring-Loaded Hind Leg
+    ctx.fillStyle = '#6ab04c';
+    ctx.beginPath();
+    ctx.moveTo(-3, 2);
+    ctx.lineTo(-15, -13 + legBend);
+    ctx.lineTo(-11, -13 + legBend);
+    ctx.lineTo(1, 3);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(-13, -13 + legBend); ctx.lineTo(-4, 15); ctx.stroke();
+    ctx.lineWidth = 2.4;
+
+    // Sweeping Antennae & Eye
+    ctx.beginPath();
+    ctx.moveTo(17, -6); ctx.quadraticCurveTo(27, -20, 34, -14);
+    ctx.moveTo(14, -7); ctx.quadraticCurveTo(22, -22, 29, -19);
+    ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(16, -2, 3, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#0d1710';
+    ctx.beginPath(); ctx.arc(16.8, -2, 1.5, 0, Math.PI * 2); ctx.fill();
+  } else if (hostName === 'Caterpillar') {
+    // Segmented Wiggling Body with spots & prolegs
+    const colors = ['#7bed9f', '#2ed573', '#fffa65', '#2ed573', '#7bed9f'];
+    for (let i = 4; i >= 0; i--) {
+      const segY = Math.sin(time * 10 + i * 1.15) * 2.8;
+      const sx = -16 + i * 7.8;
+      // Tiny prolegs underneath
+      ctx.fillStyle = '#1e824c';
+      ctx.beginPath(); ctx.arc(sx, 11 + segY * 0.5, 2.5, 0, Math.PI * 2); ctx.fill();
+
+      ctx.fillStyle = colors[i % colors.length];
+      ctx.beginPath();
+      ctx.arc(sx, 3.5 + segY, 7.6, 0, Math.PI * 2);
+      ctx.fill(); ctx.stroke();
+
+      // Decorative dorsal spot
+      ctx.fillStyle = 'rgba(255, 94, 142, 0.65)';
+      ctx.beginPath(); ctx.arc(sx, -0.5 + segY, 2.2, 0, Math.PI * 2); ctx.fill();
+    }
+    // Cute Face & Feelers
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(17, 1.5, 3.3, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#0d1710';
+    ctx.beginPath(); ctx.arc(18, 1.5, 1.6, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(13, -4); ctx.lineTo(10, -12);
+    ctx.moveTo(17, -4); ctx.lineTo(20, -12);
+    ctx.stroke();
+  } else if (hostName === 'Flea') {
+    const hop = Math.abs(Math.sin(time * 12)) * 2;
+    // Armored Chitin Plates
+    const fleaGrad = ctx.createRadialGradient(-2, -4 - hop, 2, 0, 1 - hop, 17);
+    fleaGrad.addColorStop(0, '#d97254');
+    fleaGrad.addColorStop(0.6, '#8c3b2b');
+    fleaGrad.addColorStop(1, '#4a1910');
+    ctx.fillStyle = fleaGrad;
+    ctx.beginPath(); ctx.ellipse(0, 1 - hop, 16.5, 11.5, -0.2, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    // Armor plate ridges
+    ctx.strokeStyle = 'rgba(40, 10, 5, 0.45)';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(-4, -9 - hop); ctx.quadraticCurveTo(-2, 1 - hop, -5, 11 - hop);
+    ctx.moveTo(3, -8 - hop); ctx.quadraticCurveTo(5, 1 - hop, 2, 10 - hop);
+    ctx.stroke();
+
+    ctx.strokeStyle = '#0d1710';
+    ctx.lineWidth = 2.6;
+    ctx.fillStyle = '#b55239';
+    ctx.beginPath(); ctx.arc(14, 3 - hop, 6.2, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    // Spring Legs
+    ctx.beginPath();
+    ctx.moveTo(-6, 8 - hop); ctx.lineTo(-14, 16);
+    ctx.moveTo(2, 9 - hop); ctx.lineTo(0, 17);
+    ctx.moveTo(10, 8 - hop); ctx.lineTo(16, 16);
+    ctx.stroke();
+    // Eye
+    ctx.fillStyle = '#ffd13b';
+    ctx.beginPath(); ctx.arc(15, 1 - hop, 2.6, 0, Math.PI * 2); ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+function drawOrganismArt(canvas, orgId) {
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+
+  // Subtle radial glow backdrop inside card thumbnail
+  const bgGlow = ctx.createRadialGradient(w / 2, h / 2, 4, w / 2, h / 2, w * 0.52);
+  bgGlow.addColorStop(0, 'rgba(140, 233, 65, 0.16)');
+  bgGlow.addColorStop(1, 'rgba(13, 23, 16, 0)');
+  ctx.fillStyle = bgGlow;
+  ctx.fillRect(0, 0, w, h);
+
+  ctx.save();
+  ctx.translate(w / 2, h / 2);
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = '#0d1710';
+  ctx.lineWidth = 2.4;
+
+  if (orgId === 'ophiocordyceps') {
+    // Twin fruiting fungal stalks & spore-releasing stroma
+    ctx.strokeStyle = '#e67e22';
+    ctx.lineWidth = 6.5;
+    ctx.beginPath(); ctx.moveTo(-6, 25); ctx.quadraticCurveTo(6, 2, -3, -16); ctx.stroke();
+    ctx.strokeStyle = '#ff9f43';
+    ctx.lineWidth = 4.5;
+    ctx.beginPath(); ctx.moveTo(5, 25); ctx.quadraticCurveTo(16, 6, 11, -8); ctx.stroke();
+
+    ctx.strokeStyle = '#0d1710';
+    ctx.lineWidth = 2.4;
+    ctx.fillStyle = '#ff6b2b';
+    ctx.beginPath(); ctx.ellipse(-3, -17, 11, 7.5, -0.25, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(11, -9, 7, 5, 0.3, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    // Glowing floating spores
+    ctx.fillStyle = '#ffd13b';
+    ctx.beginPath();
+    ctx.arc(18, -18, 2.8, 0, Math.PI * 2);
+    ctx.arc(-17, -10, 2.5, 0, Math.PI * 2);
+    ctx.arc(2, -26, 2.2, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (orgId === 'entomophthora') {
+    // Spore-shooting fungal conidiophores with halo
+    for (let i = -1; i <= 1; i++) {
+      const hOff = i === 0 ? -4 : 2;
+      ctx.fillStyle = '#ffbe76';
+      ctx.beginPath();
+      ctx.roundRect(i * 14 - 4.5, -6 + hOff, 9, 28 - hOff, 4);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#fff3bf';
+      ctx.beginPath(); ctx.arc(i * 14, -12 + hOff, 6, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    }
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+    ctx.beginPath(); ctx.arc(-18, -20, 2.5, 0, Math.PI * 2); ctx.arc(18, -20, 2.5, 0, Math.PI * 2); ctx.arc(0, -25, 3, 0, Math.PI * 2); ctx.fill();
+  } else if (orgId === 'toxoplasma') {
+    // Detailed crescent-shaped protozoan tachyzoite with organelles
+    const toxGrad = ctx.createLinearGradient(-18, 12, 20, -12);
+    toxGrad.addColorStop(0, '#ff8fa3');
+    toxGrad.addColorStop(1, '#d6336c');
+    ctx.fillStyle = toxGrad;
+    ctx.beginPath();
+    ctx.moveTo(-19, 13);
+    ctx.quadraticCurveTo(-5, -26, 21, -12);
+    ctx.quadraticCurveTo(4, -1, -19, 13);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#ffd13b';
+    ctx.beginPath(); ctx.arc(1, -7, 4.8, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(-7, 2, 2.5, 0, Math.PI * 2); ctx.fill();
+  } else if (orgId === 'leucochloridium') {
+    // Banded green-and-pink pulsating broodsac with eye-spots
+    ctx.fillStyle = '#8ce941';
+    ctx.beginPath(); ctx.ellipse(0, 0, 14, 23, 0.28, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#ff4d88';
+    ctx.fillRect(-11, -9, 22, 5.5);
+    ctx.fillRect(-11, 3, 22, 5.5);
+    ctx.fillStyle = '#3b1c0a';
+    ctx.beginPath(); ctx.arc(4, -16, 2.8, 0, Math.PI * 2); ctx.arc(9, -13, 2.4, 0, Math.PI * 2); ctx.fill();
+  } else if (orgId === 'spinochordodes') {
+    // Coiled muscular horsehair worm with outline & highlight
+    ctx.strokeStyle = '#0d1710';
+    ctx.lineWidth = 10;
+    ctx.beginPath();
+    ctx.moveTo(-18, 16);
+    ctx.bezierCurveTo(-22, -20, 22, -20, 0, 0);
+    ctx.bezierCurveTo(-18, 16, 20, 20, 18, -10);
+    ctx.stroke();
+
+    ctx.strokeStyle = '#e056fd';
+    ctx.lineWidth = 5.5;
+    ctx.beginPath();
+    ctx.moveTo(-18, 16);
+    ctx.bezierCurveTo(-22, -20, 22, -20, 0, 0);
+    ctx.bezierCurveTo(-18, 16, 20, 20, 18, -10);
+    ctx.stroke();
+  } else if (orgId === 'baculovirus') {
+    // Polyhedral occlusion body crystal enclosing rod-shaped nucleocapsids
+    ctx.fillStyle = 'rgba(72, 219, 251, 0.35)';
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const a = (Math.PI / 3) * i;
+      const px = Math.cos(a) * 24;
+      const py = Math.sin(a) * 24;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#00a8ff';
+    ctx.beginPath(); ctx.roundRect(-8, -12, 7, 22, 3.5); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#ffd13b';
+    ctx.beginPath(); ctx.roundRect(2, -9, 7, 22, 3.5); ctx.fill(); ctx.stroke();
+  } else if (orgId === 'yersinia') {
+    // Bipolar-stained rod bacterium with capsule glow
+    ctx.fillStyle = '#a3cb38';
+    ctx.beginPath(); ctx.roundRect(-17, -10, 34, 20, 10); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#006266';
+    ctx.beginPath(); ctx.arc(-9, 0, 4.5, 0, Math.PI * 2); ctx.arc(9, 0, 4.5, 0, Math.PI * 2); ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+/* ==========================================================================
+   5. MENU, TEAM SETUP, HOST INTRO & ORGANISM SELECTION FLOW
+   ========================================================================== */
+// Animated Menu Floating Spores Backdrop
+(() => {
+  const mCanvas = document.getElementById('menu-bg-canvas');
+  const mCtx = mCanvas.getContext('2d');
+  const spores = Array.from({ length: 28 }, () => ({
+    x: Math.random() * 1200,
+    y: Math.random() * 800,
+    r: 3 + Math.random() * 6,
+    vy: -0.3 - Math.random() * 0.6,
+    phase: Math.random() * Math.PI * 2
+  }));
+
+  function animateMenuBg() {
+    if (document.getElementById('screen-menu').classList.contains('active')) {
+      mCanvas.width = window.innerWidth;
+      mCanvas.height = window.innerHeight;
+      mCtx.clearRect(0, 0, mCanvas.width, mCanvas.height);
+      spores.forEach(s => {
+        s.y += s.vy;
+        s.phase += 0.03;
+        if (s.y < -20) { s.y = mCanvas.height + 20; s.x = Math.random() * mCanvas.width; }
+        mCtx.fillStyle = 'rgba(140, 233, 65, 0.22)';
+        mCtx.beginPath();
+        mCtx.arc(s.x + Math.sin(s.phase) * 18, s.y, s.r, 0, Math.PI * 2);
+        mCtx.fill();
+      });
+    }
+    requestAnimationFrame(animateMenuBg);
+  }
+  animateMenuBg();
+})();
+
+function renderTeamInputs() {
+  const container = document.getElementById('team-inputs-container');
+  container.innerHTML = '';
+  for (let i = 0; i < state.teamCount; i++) {
+    const existingName = state.teams[i]?.name || `Team ${i + 1}`;
+    const card = document.createElement('div');
+    card.className = 'team-input-card';
+    card.innerHTML = `
+      <div class="team-badge-dot" style="background:${TEAM_COLORS[i]};">${i + 1}</div>
+      <input type="text" maxlength="18" value="${escapeHTML(existingName)}" placeholder="Player / Team ${i + 1}" data-team-idx="${i}">
+    `;
+    container.appendChild(card);
+  }
+}
+
+document.querySelectorAll('#team-count-buttons .count-chip').forEach(btn => {
+  btn.addEventListener('click', () => {
+    SoundFX.click();
+    document.querySelectorAll('#team-count-buttons .count-chip').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.teamCount = parseInt(btn.dataset.count, 10);
+    renderTeamInputs();
+  });
+});
+
+document.getElementById('btn-play').addEventListener('click', () => {
+  SoundFX.click();
+  renderTeamInputs();
+  showScreen('screen-teams');
+});
+
+document.getElementById('btn-back-menu').addEventListener('click', () => {
+  SoundFX.click();
+  showScreen('screen-menu');
+});
+
+document.getElementById('btn-start-expedition').addEventListener('click', () => {
+  SoundFX.click();
+  const inputs = document.querySelectorAll('#team-inputs-container input');
+  state.teams = Array.from(inputs).map((inp, idx) => ({
+    name: inp.value.trim() || `Team ${idx + 1}`,
+    color: TEAM_COLORS[idx],
+    totalScore: 0,
+    coinsCollected: 0,
+    levelScores: [null, null, null, null, null, null, null]
+  }));
+  state.currentLevelIdx = 0;
+  state.currentTeamIdx = 0;
+  openHostIntro();
+});
+
+let portraitAnimId = null;
+function openHostIntro() {
+  const level = LEVELS[state.currentLevelIdx];
+  const team = state.teams[state.currentTeamIdx];
+
+  document.getElementById('intro-turn-banner').innerHTML = `
+    <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${team.color};"></span>
+    <span>ACTIVE TURN: <b>${escapeHTML(team.name)}</b> (Score: ${team.totalScore})</span>
+  `;
+  document.getElementById('intro-level-tag').textContent = level.isBonus
+    ? 'SECRET BONUS LEVEL UNLOCKED!'
+    : `LEVEL ${level.num} OF 6`;
+  document.getElementById('intro-host-title').textContent = level.title;
+  document.getElementById('intro-host-desc').textContent = level.introDesc;
+  document.getElementById('intro-host-mechanic').textContent = level.mechanicTip;
+
+  showScreen('screen-host-intro');
+
+  if (portraitAnimId) cancelAnimationFrame(portraitAnimId);
+  const pCanvas = document.getElementById('host-portrait-canvas');
+  const pCtx = pCanvas.getContext('2d');
+  let t = 0;
+  function animatePortrait() {
+    if (!document.getElementById('screen-host-intro').classList.contains('active')) return;
+    t += 0.03;
+    pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
+    drawCartoonHost(pCtx, level.hostName, pCanvas.width / 2, pCanvas.height / 2 + 6, 2.35, t, 1);
+    portraitAnimId = requestAnimationFrame(animatePortrait);
+  }
+  animatePortrait();
+}
+
+document.getElementById('btn-to-select').addEventListener('click', () => {
+  SoundFX.click();
+  openOrganismSelection();
+});
+
+document.getElementById('btn-back-intro').addEventListener('click', () => {
+  SoundFX.click();
+  openHostIntro();
+});
+
+function openOrganismSelection() {
+  const level = LEVELS[state.currentLevelIdx];
+  const team = state.teams[state.currentTeamIdx];
+  state.selectedOrgId = null;
+
+  const confirmBtn = document.getElementById('btn-confirm-organism');
+  confirmBtn.disabled = true;
+
+  document.getElementById('select-turn-banner').innerHTML = `
+    <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${team.color};"></span>
+    <span>${escapeHTML(team.name)} • Host: <b>${level.hostName}</b></span>
+  `;
+
+  // Include Yersinia pestis on Bonus Level 7, otherwise standard 6 organisms
+  const pool = level.isBonus ? [...ORGANISMS, BONUS_ORGANISM] : [...ORGANISMS];
+  // Fisher-Yates shuffle so card positions randomize before every level
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+
+  const grid = document.getElementById('organisms-grid');
+  grid.innerHTML = '';
+
+  pool.forEach(org => {
+    const card = document.createElement('div');
+    card.className = 'org-card';
+    card.innerHTML = `
+      <div class="org-card-top">
+        <canvas class="org-art" width="68" height="68"></canvas>
+        <div>
+          <span class="group-badge ${org.groupClass}">${org.group}</span>
+          <div class="org-name">${org.name}</div>
+        </div>
+      </div>
+      <div class="org-desc">${org.shortDesc}</div>
+    `;
+    const artCanvas = card.querySelector('canvas');
+    drawOrganismArt(artCanvas, org.id);
+
+    card.addEventListener('click', () => {
+      SoundFX.select();
+      document.querySelectorAll('#organisms-grid .org-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      state.selectedOrgId = org.id;
+      confirmBtn.disabled = false;
+    });
+
+    grid.appendChild(card);
+  });
+
+  showScreen('screen-select');
+}
+
+document.getElementById('btn-confirm-organism').addEventListener('click', () => {
+  if (!state.selectedOrgId) return;
+  SoundFX.click();
+
+  const level = LEVELS[state.currentLevelIdx];
+  const team = state.teams[state.currentTeamIdx];
+  const allOrgs = [...ORGANISMS, BONUS_ORGANISM];
+  const chosenOrg = allOrgs.find(o => o.id === state.selectedOrgId);
+  const correctOrg = allOrgs.find(o => o.id === level.correctOrgId);
+
+  let points = 0;
+  let matchType = 'WRONG';
+  if (chosenOrg.id === correctOrg.id) {
+    points = 100;
+    matchType = 'PERFECT';
+  } else if (chosenOrg.group === correctOrg.group) {
+    points = 50;
+    matchType = 'PARTIAL';
+  }
+
+  // Record highest score achieved on this level for the active team
+  const prevScore = team.levelScores[state.currentLevelIdx];
+  if (prevScore === null || points > prevScore) {
+    team.levelScores[state.currentLevelIdx] = points;
+    team.totalScore = team.levelScores.reduce((sum, val) => sum + (val || 0), 0);
+  }
+
+  state.lastTurnResult = {
+    level,
+    chosenOrg,
+    correctOrg,
+    points,
+    matchType
+  };
+
+  startPlatformLevel();
+});
+
+/* ==========================================================================
+   6. 2D SIDE-SCROLLING PLATFORMER ENGINE (ALL 6 DISTINCT LEVELS)
+   ========================================================================== */
+const PlatformerEngine = (() => {
+  const canvas = document.getElementById('game-canvas');
+  const ctx = canvas.getContext('2d');
+
+  let animFrame = null;
+  let worldTime = 0;
+  let levelData = null;
+  let levelCompleted = false;
+  let particles = [];
+  const camera = { x: 0 };
+
+  const input = {
+    left: false,
+    right: false,
+    jump: false,
+    jumpJustPressed: false,
+    special: false,
+    specialJustPressed: false
+  };
+
+  let player = {
+    x: 70, y: 430, w: 42, h: 34,
+    vx: 0, vy: 0, facing: 1,
+    grounded: false, climbing: false,
+    coyoteTimer: 0, jumpBufferTimer: 0,
+    airSpecialUsed: false, hostId: 'Ant'
+  };
+
+  function showToast(msg) {
+    const toast = document.getElementById('game-toast');
+    if (!toast) return;
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toast._timer);
+    toast._timer = setTimeout(() => toast.classList.remove('show'), 2400);
+  }
+
+  function spawnBurst(x, y, color, count = 12) {
+    for (let i = 0; i < count; i++) {
+      const ang = Math.random() * Math.PI * 2;
+      const spd = 1.5 + Math.random() * 4;
+      particles.push({
+        x, y,
+        vx: Math.cos(ang) * spd,
+        vy: Math.sin(ang) * spd - 1.5,
+        r: 3 + Math.random() * 4,
+        color,
+        life: 1
+      });
+    }
+  }
+
+  function buildLevelGeometry(levelIdx) {
+    const worldW = 2850 + levelIdx * 160;
+    const worldH = 600;
+    const platforms = [];
+    const climbs = [];
+    const hazards = [];
+    const spores = [];
+    let checkpoint = null;
+    let goal = { x: 2640, y: 150, w: 90, h: 90, label: 'GOAL' };
+
+    if (levelIdx === 0) {
+      // LEVEL 1 (Easy Intro): ZOMBIE ANT — Gentle climbs & wide leaves
+      platforms.push({ x: 0, y: 500, w: 620, h: 120, type: 'ground' });
+      platforms.push({ x: 680, y: 465, w: 340, h: 28, type: 'leaf' });
+      platforms.push({ x: 1080, y: 405, w: 360, h: 28, type: 'leaf' });
+      platforms.push({ x: 1500, y: 480, w: 460, h: 120, type: 'ground' });
+      platforms.push({ x: 1660, y: 345, w: 260, h: 26, type: 'leaf' });
+      platforms.push({ x: 1990, y: 270, w: 320, h: 28, type: 'leaf' });
+      platforms.push({ x: 2370, y: 205, w: 460, h: 32, type: 'leaf' });
+
+      climbs.push({ x: 950, y: 360, w: 28, h: 130 });
+      climbs.push({ x: 1600, y: 310, w: 28, h: 180 });
+      climbs.push({ x: 2320, y: 175, w: 28, h: 140 });
+
+      hazards.push({ x: 470, y: 474, w: 34, h: 26, type: 'thorn' });
+      hazards.push({ x: 1760, y: 454, w: 36, h: 26, type: 'thorn' });
+
+      goal = { x: 2660, y: 120, w: 110, h: 85, type: 'spore_leaf', label: 'DEATH-GRIP LEAF' };
+    } else if (levelIdx === 1) {
+      // LEVEL 2 (Easy-Medium): INFECTED FLY — Aerial garden with wider vertical gaps
+      platforms.push({ x: 0, y: 500, w: 460, h: 120, type: 'ground' });
+      platforms.push({ x: 560, y: 420, w: 210, h: 26, type: 'flower' });
+      platforms.push({ x: 880, y: 330, w: 210, h: 26, type: 'flower' });
+      platforms.push({ x: 1210, y: 410, w: 240, h: 26, type: 'flower' });
+      platforms.push({ x: 1570, y: 290, w: 210, h: 26, type: 'flower' });
+      platforms.push({ x: 1910, y: 210, w: 220, h: 26, type: 'flower' });
+      platforms.push({ x: 2260, y: 155, w: 200, h: 26, type: 'flower' });
+      platforms.push({ x: 2580, y: 115, w: 340, h: 30, type: 'flower' });
+
+      hazards.push({ x: 340, y: 474, w: 38, h: 26, type: 'spiderweb' });
+      hazards.push({ x: 1300, y: 384, w: 38, h: 26, type: 'spiderweb' });
+      hazards.push({ x: 2000, y: 184, w: 38, h: 26, type: 'spiderweb' });
+
+      goal = { x: 2760, y: 30, w: 110, h: 85, type: 'summit_flower', label: 'SPORE SUMMIT' };
+    } else if (levelIdx === 2) {
+      // LEVEL 3 (Medium): FEARLESS RODENT — Fast sprints, low tunnel ceilings & dash gaps
+      platforms.push({ x: 0, y: 500, w: 580, h: 120, type: 'ground' });
+      platforms.push({ x: 220, y: 385, w: 300, h: 34, type: 'log' });
+      platforms.push({ x: 730, y: 455, w: 310, h: 145, type: 'ground' });
+      platforms.push({ x: 1180, y: 390, w: 250, h: 28, type: 'log' });
+      platforms.push({ x: 1560, y: 480, w: 520, h: 120, type: 'ground' });
+      platforms.push({ x: 1650, y: 365, w: 320, h: 34, type: 'log' });
+      platforms.push({ x: 2210, y: 420, w: 220, h: 28, type: 'log' });
+      platforms.push({ x: 2580, y: 460, w: 460, h: 140, type: 'ground' });
+
+      hazards.push({ x: 450, y: 474, w: 38, h: 26, type: 'thorn' });
+      hazards.push({ x: 870, y: 429, w: 38, h: 26, type: 'thorn' });
+      hazards.push({ x: 1790, y: 454, w: 38, h: 26, type: 'thorn' });
+      hazards.push({ x: 2690, y: 434, w: 38, h: 26, type: 'thorn' });
+
+      goal = { x: 2880, y: 365, w: 120, h: 95, type: 'cat', label: 'FELINE PREDATOR' };
+    } else if (levelIdx === 3) {
+      // LEVEL 4 (Medium-Hard): ZOMBIE SNAIL — Deliberate slow climbing & salt crystal hazards
+      platforms.push({ x: 0, y: 500, w: 520, h: 120, type: 'ground' });
+      platforms.push({ x: 600, y: 435, w: 270, h: 28, type: 'leaf' });
+      platforms.push({ x: 960, y: 360, w: 280, h: 28, type: 'leaf' });
+      platforms.push({ x: 1340, y: 460, w: 410, h: 140, type: 'ground' });
+      platforms.push({ x: 1520, y: 315, w: 250, h: 28, type: 'leaf' });
+      platforms.push({ x: 1870, y: 235, w: 260, h: 28, type: 'leaf' });
+      platforms.push({ x: 2230, y: 170, w: 260, h: 28, type: 'leaf' });
+      platforms.push({ x: 2580, y: 130, w: 620, h: 32, type: 'leaf' });
+
+      climbs.push({ x: 840, y: 340, w: 28, h: 115 });
+      climbs.push({ x: 1480, y: 295, w: 28, h: 175 });
+      climbs.push({ x: 2190, y: 155, w: 28, h: 110 });
+
+      hazards.push({ x: 390, y: 474, w: 36, h: 26, type: 'salt' });
+      hazards.push({ x: 1080, y: 334, w: 36, h: 26, type: 'salt' });
+      hazards.push({ x: 1640, y: 434, w: 36, h: 26, type: 'salt' });
+      hazards.push({ x: 2350, y: 144, w: 36, h: 26, type: 'salt' });
+
+      goal = { x: 3040, y: 40, w: 120, h: 90, type: 'bird_perch', label: 'SUNLIT BIRD PERCH' };
+    } else if (levelIdx === 4) {
+      // LEVEL 5 (Hard): WATER-SEEKING CRICKET — Wide swamp gaps & small lily pads requiring high hops
+      platforms.push({ x: 0, y: 500, w: 420, h: 120, type: 'swamp_rock' });
+      platforms.push({ x: 560, y: 445, w: 175, h: 26, type: 'lilypad' });
+      platforms.push({ x: 900, y: 365, w: 175, h: 26, type: 'lilypad' });
+      platforms.push({ x: 1250, y: 450, w: 260, h: 150, type: 'swamp_rock' });
+      platforms.push({ x: 1680, y: 350, w: 170, h: 26, type: 'lilypad' });
+      platforms.push({ x: 2040, y: 270, w: 170, h: 26, type: 'lilypad' });
+      platforms.push({ x: 2410, y: 360, w: 185, h: 26, type: 'lilypad' });
+      platforms.push({ x: 2760, y: 290, w: 175, h: 26, type: 'lilypad' });
+      platforms.push({ x: 3080, y: 470, w: 360, h: 130, type: 'water_pond' });
+
+      hazards.push({ x: 310, y: 474, w: 38, h: 26, type: 'thorn' });
+      hazards.push({ x: 1360, y: 424, w: 38, h: 26, type: 'thorn' });
+
+      goal = { x: 3150, y: 390, w: 230, h: 85, type: 'pond', label: 'OPEN SWAMP WATER' };
+    } else if (levelIdx === 5) {
+      // LEVEL 6 (Hardest): CLIMBING CATERPILLAR — Multi-tier vertical jungle ascent & hazards
+      platforms.push({ x: 0, y: 500, w: 480, h: 120, type: 'ground' });
+      platforms.push({ x: 570, y: 425, w: 230, h: 28, type: 'branch' });
+      platforms.push({ x: 900, y: 335, w: 230, h: 28, type: 'branch' });
+      platforms.push({ x: 1240, y: 440, w: 340, h: 160, type: 'ground' });
+      platforms.push({ x: 1470, y: 295, w: 220, h: 28, type: 'branch' });
+      platforms.push({ x: 1810, y: 215, w: 230, h: 28, type: 'branch' });
+      platforms.push({ x: 2160, y: 150, w: 230, h: 28, type: 'branch' });
+      platforms.push({ x: 2510, y: 220, w: 230, h: 28, type: 'branch' });
+      platforms.push({ x: 2860, y: 135, w: 720, h: 32, type: 'branch' });
+
+      climbs.push({ x: 820, y: 320, w: 28, h: 125 });
+      climbs.push({ x: 1430, y: 275, w: 28, h: 175 });
+      climbs.push({ x: 2120, y: 135, w: 28, h: 110 });
+      climbs.push({ x: 2810, y: 120, w: 28, h: 120 });
+
+      hazards.push({ x: 360, y: 474, w: 38, h: 26, type: 'thorn' });
+      hazards.push({ x: 1000, y: 309, w: 38, h: 26, type: 'thorn' });
+      hazards.push({ x: 1480, y: 414, w: 38, h: 26, type: 'thorn' });
+      hazards.push({ x: 1910, y: 189, w: 38, h: 26, type: 'thorn' });
+      hazards.push({ x: 2610, y: 194, w: 38, h: 26, type: 'thorn' });
+
+      goal = { x: 3420, y: 50, w: 120, h: 85, type: 'canopy', label: 'JUNGLE TREE-TOP' };
+    } else {
+      // BONUS LEVEL 7: THE BLOCKED FLEA — High-bounce fur & skin terrain
+      platforms.push({ x: 0, y: 500, w: 460, h: 120, type: 'ground' });
+      platforms.push({ x: 580, y: 390, w: 210, h: 26, type: 'flower' });
+      platforms.push({ x: 920, y: 280, w: 210, h: 26, type: 'flower' });
+      platforms.push({ x: 1280, y: 410, w: 280, h: 190, type: 'ground' });
+      platforms.push({ x: 1700, y: 290, w: 210, h: 26, type: 'flower' });
+      platforms.push({ x: 2060, y: 190, w: 220, h: 26, type: 'flower' });
+      platforms.push({ x: 2440, y: 260, w: 220, h: 26, type: 'flower' });
+      platforms.push({ x: 2800, y: 170, w: 620, h: 32, type: 'flower' });
+
+      hazards.push({ x: 340, y: 474, w: 38, h: 26, type: 'thorn' });
+      hazards.push({ x: 1390, y: 384, w: 38, h: 26, type: 'thorn' });
+      hazards.push({ x: 2150, y: 164, w: 38, h: 26, type: 'thorn' });
+
+      goal = { x: 3260, y: 85, w: 120, h: 85, type: 'summit_flower', label: 'BLOOD VESSEL TARGET' };
+    }
+
+    // Generate collectible nutrient/spore orbs along platforms
+    platforms.forEach((p, i) => {
+      if (i === 0) return;
+      const count = Math.max(1, Math.floor(p.w / 140));
+      for (let c = 0; c < count; c++) {
+        spores.push({
+          x: p.x + 45 + c * 110,
+          y: p.y - 34,
+          r: 10,
+          collected: false,
+          bob: Math.random() * Math.PI * 2
+        });
+      }
+    });
+
+    // Mid-level checkpoint flag around middle platform
+    const midPlat = platforms[Math.min(3, platforms.length - 1)];
+    checkpoint = {
+      x: midPlat.x + 60,
+      y: midPlat.y - 48,
+      w: 32,
+      h: 48,
+      reached: false,
+      spawnX: midPlat.x + 55,
+      spawnY: midPlat.y - 44
+    };
+
+    return { worldW, worldH, platforms, climbs, hazards, spores, checkpoint, goal };
+  }
+
+  function resetPlayerToStart() {
+    const level = LEVELS[state.currentLevelIdx];
+    const startX = (levelData && levelData.checkpoint && levelData.checkpoint.reached) ? levelData.checkpoint.spawnX : 70;
+    const startY = (levelData && levelData.checkpoint && levelData.checkpoint.reached) ? levelData.checkpoint.spawnY : 430;
+    player = {
+      x: startX,
+      y: startY,
+      w: 42,
+      h: 34,
+      vx: 0,
+      vy: 0,
+      facing: 1,
+      grounded: false,
+      climbing: false,
+      coyoteTimer: 0,
+      jumpBufferTimer: 0,
+      airSpecialUsed: false,
+      hostId: level.hostName
+    };
+    camera.x = Math.max(0, startX - 240);
+  }
+
+  function getHostPhysics(levelIdx) {
+    switch (levelIdx) {
+      case 0: return { speed: 4.6, jump: -12.8, gravity: 0.56, canClimb: true, fly: false, doubleHop: false, dash: false, snailSlow: false, crawlWave: false }; // Ant: nimble runner & stem climber
+      case 1: return { speed: 4.8, jump: -10.8, gravity: 0.34, canClimb: false, fly: true, doubleHop: false, dash: false, snailSlow: false, crawlWave: false }; // Fly: true sustained flight & buoyant glide
+      case 2: return { speed: 6.8, jump: -13.4, gravity: 0.58, canClimb: false, fly: false, doubleHop: false, dash: true, snailSlow: false, crawlWave: false }; // Rodent: ultra-fast sprinter + horizontal dash
+      case 3: return { speed: 2.35, jump: -11.6, gravity: 0.50, canClimb: true, fly: false, doubleHop: false, dash: false, snailSlow: true, crawlWave: false }; // Snail: slow deliberate slime-glide & vertical stalk climb
+      case 4: return { speed: 4.2, jump: -16.2, gravity: 0.54, canClimb: false, fly: false, doubleHop: true, dash: false, snailSlow: false, crawlWave: false }; // Cricket: towering spring-loaded leaps + mid-air double hop
+      case 5: return { speed: 3.6, jump: -12.0, gravity: 0.54, canClimb: true, fly: false, doubleHop: false, dash: false, snailSlow: false, crawlWave: true }; // Caterpillar: rhythmic inchworm crawl wave + vine climbing
+      case 6: return { speed: 5.2, jump: -17.4, gravity: 0.52, canClimb: false, fly: false, doubleHop: true, dash: false, snailSlow: false, crawlWave: false }; // Flea: super-charged catapult leaps + mid-air vault
+    }
+    return { speed: 4.5, jump: -12.5, gravity: 0.55, canClimb: true, fly: false, doubleHop: false, dash: false, snailSlow: false, crawlWave: false };
+  }
+
+  function rectOverlap(a, b) {
+    return a.x < b.x + b.w &&
+           a.x + a.w > b.x &&
+           a.y < b.y + b.h &&
+           a.y + a.h > b.y;
+  }
+
+  function updatePhysics() {
+    if (levelCompleted) return;
+    worldTime += 0.016;
+    const specs = getHostPhysics(state.currentLevelIdx);
+
+    // Horizontal movement adapted to each host's signature locomotion
+    let moveDir = 0;
+    if (input.left) moveDir -= 1;
+    if (input.right) moveDir += 1;
+
+    if (moveDir !== 0) {
+      player.facing = moveDir;
+      let targetSpeed = specs.speed;
+      if (specs.crawlWave) {
+        // Caterpillar inchworm surge-and-anchor pulse
+        const wave = 0.45 + 0.85 * Math.pow(Math.max(0, Math.sin(worldTime * 11)), 2);
+        targetSpeed = specs.speed * wave;
+      }
+      const accel = specs.snailSlow ? 0.14 : (specs.dash ? 0.36 : 0.28);
+      player.vx += (moveDir * targetSpeed - player.vx) * accel;
+    } else {
+      const friction = specs.snailSlow ? 0.65 : 0.76;
+      player.vx *= friction;
+      if (Math.abs(player.vx) < 0.1) player.vx = 0;
+    }
+
+    // Check Climbable Stems / Vines
+    let touchingClimb = false;
+    for (const c of levelData.climbs) {
+      if (rectOverlap(player, c)) {
+        touchingClimb = true;
+        break;
+      }
+    }
+
+    if (specs.canClimb && touchingClimb && (input.jump || input.special)) {
+      player.climbing = true;
+      player.vy = -4.2;
+      player.grounded = false;
+    } else {
+      player.climbing = false;
+    }
+
+    // Special Abilities
+    if (specs.fly) {
+      // Fly: Full sustained flight when holding JUMP or SKILL in mid-air
+      if ((input.jump && !player.grounded && player.vy > -3.5) || input.special) {
+        player.vy = Math.max(player.vy - 1.15, -5.8);
+        if (Math.random() < 0.16) SoundFX.flutter();
+      }
+    } else if (specs.doubleHop) {
+      // Cricket: Mid-air super spring hop
+      if (input.specialJustPressed && !player.airSpecialUsed) {
+        player.vy = -13.5;
+        player.airSpecialUsed = true;
+        SoundFX.jump();
+        spawnBurst(player.x + player.w / 2, player.y + player.h, '#8ce941', 10);
+      }
+    } else if (specs.dash) {
+      // Rodent: Horizontal Dash
+      if (input.specialJustPressed && !player.airSpecialUsed) {
+        player.vx = player.facing * 13.5;
+        player.vy = Math.min(player.vy, -2);
+        player.airSpecialUsed = true;
+        SoundFX.flutter();
+        spawnBurst(player.x + player.w / 2, player.y + player.h / 2, '#38d9ff', 10);
+      }
+    }
+
+    // Standard Jump (with coyote time + jump buffering)
+    if (input.jumpJustPressed) {
+      player.jumpBufferTimer = 7;
+    } else if (player.jumpBufferTimer > 0) {
+      player.jumpBufferTimer--;
+    }
+
+    if (player.grounded) {
+      player.coyoteTimer = 7;
+      player.airSpecialUsed = false;
+    } else if (player.coyoteTimer > 0) {
+      player.coyoteTimer--;
+    }
+
+    if (player.jumpBufferTimer > 0 && player.coyoteTimer > 0 && !player.climbing) {
+      player.vy = specs.jump;
+      player.grounded = false;
+      player.coyoteTimer = 0;
+      player.jumpBufferTimer = 0;
+      SoundFX.jump();
+    }
+
+    // Apply Gravity
+    if (!player.climbing) {
+      player.vy += specs.gravity;
+      if (player.vy > 14) player.vy = 14;
+    }
+
+    // Move X & Resolve X Collisions
+    player.x += player.vx;
+    if (player.x < 0) { player.x = 0; player.vx = 0; }
+    if (player.x + player.w > levelData.worldW) { player.x = levelData.worldW - player.w; player.vx = 0; }
+
+    for (const p of levelData.platforms) {
+      if (rectOverlap(player, p)) {
+        if (player.vx > 0) {
+          player.x = p.x - player.w;
+          player.vx = 0;
+        } else if (player.vx < 0) {
+          player.x = p.x + p.w;
+          player.vx = 0;
+        }
+      }
+    }
+
+    // Move Y & Resolve Y Collisions
+    player.y += player.vy;
+    player.grounded = false;
+
+    for (const p of levelData.platforms) {
+      if (rectOverlap(player, p)) {
+        if (player.vy > 0) {
+          player.y = p.y - player.h;
+          player.vy = 0;
+          player.grounded = true;
+        } else if (player.vy < 0) {
+          player.y = p.y + p.h;
+          player.vy = 0;
+        }
+      }
+    }
+
+    // Fall into pit check
+    if (player.y > levelData.worldH + 40) {
+      SoundFX.hurt();
+      showToast('Oops! Try that jump again!');
+      resetPlayerToStart();
+      return;
+    }
+
+    // Hazards check
+    for (const h of levelData.hazards) {
+      const shrinkH = { x: h.x + 5, y: h.y + 4, w: h.w - 10, h: h.h - 4 };
+      if (rectOverlap(player, shrinkH)) {
+        SoundFX.hurt();
+        spawnBurst(player.x + 20, player.y + 16, '#ff4d88', 14);
+        showToast('Watch out for hazards! Respawning...');
+        resetPlayerToStart();
+        return;
+      }
+    }
+
+    // Collect Coins (+1 bonus point per coin)
+    const team = state.teams[state.currentTeamIdx];
+    for (const s of levelData.spores) {
+      if (!s.collected) {
+        const sBox = { x: s.x - s.r, y: s.y - s.r, w: s.r * 2, h: s.r * 2 };
+        if (rectOverlap(player, sBox)) {
+          s.collected = true;
+          team.coinsCollected++;
+          document.getElementById('hud-spores').textContent = `🪙 ${team.coinsCollected}`;
+          SoundFX.collect();
+          spawnBurst(s.x, s.y, '#ffd13b', 10);
+        }
+      }
+    }
+
+    // Mid-level Checkpoint activation
+    const cp = levelData.checkpoint;
+    if (cp && !cp.reached && rectOverlap(player, cp)) {
+      cp.reached = true;
+      SoundFX.collect();
+      spawnBurst(cp.x + 16, cp.y + 12, '#38d9ff', 14);
+      showToast('Checkpoint reached!');
+    }
+
+    // Goal check
+    if (rectOverlap(player, levelData.goal)) {
+      levelCompleted = true;
+      state.levelCompletedViaSkip = false;
+      SoundFX.goal();
+      spawnBurst(levelData.goal.x + 45, levelData.goal.y + 40, '#8ce941', 28);
+      showToast(`OBJECTIVE REACHED: ${levelData.goal.label}!`);
+      setTimeout(() => {
+        stop();
+        playFinaleCutscene(state.currentLevelIdx, () => {
+          openResultScreen();
+        });
+      }, 650);
+    }
+
+    // Update Particles
+    particles.forEach(pt => {
+      pt.x += pt.vx;
+      pt.y += pt.vy;
+      pt.vy += 0.12;
+      pt.life -= 0.03;
+    });
+    particles = particles.filter(pt => pt.life > 0);
+
+    // Smooth Camera Follow
+    const viewW = canvas.width / (canvas.height / levelData.worldH);
+    const targetCamX = player.x - viewW * 0.35;
+    camera.x += (targetCamX - camera.x) * 0.12;
+    camera.x = Math.max(0, Math.min(levelData.worldW - viewW, camera.x));
+
+    // Clear just-pressed flags
+    input.jumpJustPressed = false;
+    input.specialJustPressed = false;
+  }
+
+  function drawBackground(theme, viewW) {
+    const grad = ctx.createLinearGradient(0, 0, 0, levelData.worldH);
+    if (theme === 'forest') {
+      grad.addColorStop(0, '#226640');
+      grad.addColorStop(0.55, '#164229');
+      grad.addColorStop(1, '#091f12');
+    } else if (theme === 'jungle') {
+      grad.addColorStop(0, '#0f6e56');
+      grad.addColorStop(0.55, '#144d34');
+      grad.addColorStop(1, '#082418');
+    } else if (theme === 'garden') {
+      grad.addColorStop(0, '#279ee0');
+      grad.addColorStop(0.68, '#a6ecff');
+      grad.addColorStop(1, '#58b368');
+    } else if (theme === 'snailgarden') {
+      grad.addColorStop(0, '#ff9f43');
+      grad.addColorStop(0.38, '#ffd166');
+      grad.addColorStop(0.82, '#8ce99a');
+      grad.addColorStop(1, '#2d6a4f');
+    } else if (theme === 'tunnels') {
+      grad.addColorStop(0, '#3d2b22');
+      grad.addColorStop(0.55, '#241913');
+      grad.addColorStop(1, '#120c09');
+    } else if (theme === 'swamp') {
+      grad.addColorStop(0, '#2a5261');
+      grad.addColorStop(0.6, '#1d3944');
+      grad.addColorStop(1, '#0f2128');
+    } else if (theme === 'furforest') {
+      grad.addColorStop(0, '#781d56');
+      grad.addColorStop(0.6, '#4d1137');
+      grad.addColorStop(1, '#26071b');
+    }
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, viewW, levelData.worldH);
+
+    // Distant Layer 1 (Slow Parallax Hills / Silhouettes)
+    ctx.save();
+    const farParallax = camera.x * 0.16;
+    for (let i = 0; i < 12; i++) {
+      const fx = i * 320 - (farParallax % 320);
+      if (theme === 'forest' || theme === 'jungle') {
+        ctx.fillStyle = 'rgba(10, 32, 20, 0.42)';
+        ctx.beginPath();
+        ctx.arc(fx + 160, 560, 210, Math.PI, 0);
+        ctx.fill();
+      } else if (theme === 'garden' || theme === 'snailgarden') {
+        ctx.fillStyle = 'rgba(64, 145, 108, 0.32)';
+        ctx.beginPath();
+        ctx.arc(fx + 160, 565, 220, Math.PI, 0);
+        ctx.fill();
+      } else if (theme === 'swamp') {
+        ctx.fillStyle = 'rgba(15, 34, 42, 0.5)';
+        ctx.beginPath();
+        ctx.arc(fx + 160, 565, 190, Math.PI, 0);
+        ctx.fill();
+      }
+    }
+    ctx.restore();
+
+    // Mid-ground Layer 2 (Detailed Environment Elements)
+    ctx.save();
+    const parallax = camera.x * 0.36;
+    for (let i = 0; i < 16; i++) {
+      const bx = i * 250 - (parallax % 250);
+      if (theme === 'forest') {
+        // Textured bark trunks & layered canopy clusters
+        ctx.fillStyle = 'rgba(13, 38, 23, 0.62)';
+        ctx.fillRect(bx + 35, 30, 48, 570);
+        ctx.fillStyle = 'rgba(26, 66, 42, 0.5)';
+        ctx.fillRect(bx + 44, 30, 12, 570);
+        ctx.fillStyle = 'rgba(46, 125, 72, 0.38)';
+        ctx.beginPath();
+        ctx.arc(bx + 59, 68, 86, 0, Math.PI * 2);
+        ctx.arc(bx + 115, 92, 62, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (theme === 'jungle') {
+        // Tropical ferns, palms & swaying jungle lianas
+        ctx.fillStyle = 'rgba(8, 30, 22, 0.58)';
+        ctx.fillRect(bx + 25, 0, 38, 600);
+        ctx.strokeStyle = 'rgba(140, 233, 65, 0.32)';
+        ctx.lineWidth = 4.5;
+        ctx.beginPath();
+        ctx.moveTo(bx + 120, 0);
+        ctx.quadraticCurveTo(bx + 148 + Math.sin(worldTime * 2 + i) * 14, 130, bx + 115, 255);
+        ctx.stroke();
+        // Hanging vine leaves
+        ctx.fillStyle = 'rgba(140, 233, 65, 0.25)';
+        ctx.beginPath();
+        ctx.ellipse(bx + 128, 120, 14, 6, 0.4, 0, Math.PI * 2);
+        ctx.ellipse(bx + 122, 185, 14, 6, -0.4, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (theme === 'garden') {
+        // Fluffy clouds & multi-petal background blossoms
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+        ctx.beginPath();
+        ctx.arc(bx + 60, 85, 32, 0, Math.PI * 2);
+        ctx.arc(bx + 92, 78, 42, 0, Math.PI * 2);
+        ctx.arc(bx + 126, 86, 28, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Background flower stem & petals
+        ctx.fillStyle = 'rgba(45, 138, 78, 0.35)';
+        ctx.fillRect(bx + 157, 440, 6, 160);
+        ctx.fillStyle = 'rgba(255, 112, 166, 0.32)';
+        for (let p = 0; p < 5; p++) {
+          const ang = (Math.PI * 2 * p) / 5;
+          ctx.beginPath();
+          ctx.arc(bx + 160 + Math.cos(ang) * 18, 440 + Math.sin(ang) * 18, 14, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.fillStyle = 'rgba(255, 209, 59, 0.45)';
+        ctx.beginPath(); ctx.arc(bx + 160, 440, 11, 0, Math.PI * 2); ctx.fill();
+      } else if (theme === 'snailgarden') {
+        // Warm sunbeams & lush garden silhouettes
+        ctx.fillStyle = 'rgba(255, 245, 180, 0.18)';
+        ctx.beginPath();
+        ctx.moveTo(bx + 90, 0);
+        ctx.lineTo(bx + 10, 600);
+        ctx.lineTo(bx + 190, 600);
+        ctx.fill();
+      } else if (theme === 'tunnels') {
+        // Underground burrow arches, pebbles & hanging roots
+        ctx.fillStyle = 'rgba(78, 56, 42, 0.52)';
+        ctx.beginPath();
+        ctx.arc(bx + 125, 530, 155, Math.PI, 0);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255, 209, 59, 0.18)';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(bx + 80, 0);
+        ctx.quadraticCurveTo(bx + 98, 70, bx + 70, 140);
+        ctx.stroke();
+      } else if (theme === 'swamp') {
+        // Glowing fireflies, mist orbs & cattail reeds
+        ctx.fillStyle = 'rgba(140, 233, 65, 0.13)';
+        ctx.beginPath();
+        ctx.arc(bx + 90, 175 + Math.sin(worldTime + i) * 12, 48, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(16, 38, 44, 0.72)';
+        ctx.fillRect(bx + 40, 310, 8, 290);
+        ctx.fillRect(bx + 54, 345, 7, 255);
+        // Cattail head
+        ctx.fillStyle = 'rgba(92, 56, 34, 0.75)';
+        ctx.beginPath(); ctx.roundRect(bx + 37, 325, 14, 28, 6); ctx.fill();
+      } else if (theme === 'furforest') {
+        // Giant swaying mammalian fur shafts
+        ctx.strokeStyle = 'rgba(255, 190, 150, 0.25)';
+        ctx.lineWidth = 11;
+        ctx.beginPath();
+        ctx.moveTo(bx + 70, 600);
+        ctx.quadraticCurveTo(bx + 115 + Math.sin(worldTime * 2 + i) * 15, 300, bx + 60, 0);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+
+  function render() {
+    const parent = canvas.parentElement;
+    if (canvas.width !== parent.clientWidth || canvas.height !== parent.clientHeight) {
+      canvas.width = parent.clientWidth || window.innerWidth;
+      canvas.height = parent.clientHeight || window.innerHeight;
+    }
+
+    const scale = canvas.height / levelData.worldH;
+    const viewW = canvas.width / scale;
+
+    ctx.save();
+    ctx.scale(scale, scale);
+
+    drawBackground(LEVELS[state.currentLevelIdx].theme, viewW);
+
+    ctx.translate(-camera.x, 0);
+
+    // 1. Climbable Stems / Vines
+    for (const c of levelData.climbs) {
+      ctx.fillStyle = '#2d8a4e';
+      ctx.strokeStyle = '#0d1710';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.roundRect(c.x, c.y, c.w, c.h, 8);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#8ce941';
+      for (let vy = c.y + 18; vy < c.y + c.h - 14; vy += 28) {
+        ctx.beginPath();
+        ctx.ellipse(c.x - 6, vy, 9, 4.5, -0.35, 0, Math.PI * 2);
+        ctx.ellipse(c.x + c.w + 6, vy + 12, 9, 4.5, 0.35, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      }
+    }
+
+    // 2. Platforms (Richly textured wood grain, leaf veins, flower petals & water ripples)
+    for (const p of levelData.platforms) {
+      ctx.strokeStyle = '#0d1710';
+      ctx.lineWidth = 3;
+      if (p.type === 'ground' || p.type === 'swamp_rock') {
+        ctx.fillStyle = p.type === 'swamp_rock' ? '#4a5568' : '#6e472b';
+        ctx.fillRect(p.x, p.y, p.w, p.h);
+        ctx.strokeRect(p.x, p.y, p.w, p.h);
+
+        // Sub-soil stones & texture pebbles
+        ctx.fillStyle = p.type === 'swamp_rock' ? 'rgba(26, 32, 44, 0.35)' : 'rgba(62, 36, 18, 0.45)';
+        for (let sx = p.x + 24; sx < p.x + p.w - 24; sx += 56) {
+          ctx.beginPath();
+          ctx.ellipse(sx, p.y + 42, 12, 7, 0.2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Lush Grass / Moss Top Rim with scalloped tufts
+        ctx.fillStyle = p.type === 'swamp_rock' ? '#52b788' : '#5fb31d';
+        ctx.fillRect(p.x, p.y, p.w, 16);
+        ctx.strokeRect(p.x, p.y, p.w, 16);
+        ctx.fillStyle = p.type === 'swamp_rock' ? '#74c69d' : '#8ce941';
+        ctx.fillRect(p.x + 3, p.y + 2, p.w - 6, 5);
+      } else if (p.type === 'leaf' || p.type === 'lilypad') {
+        const leafGrad = ctx.createLinearGradient(p.x, p.y, p.x, p.y + p.h);
+        leafGrad.addColorStop(0, p.type === 'lilypad' ? '#52b788' : '#8ce941');
+        leafGrad.addColorStop(1, p.type === 'lilypad' ? '#2d6a4f' : '#4c9a12');
+        ctx.fillStyle = leafGrad;
+        ctx.beginPath();
+        ctx.roundRect(p.x, p.y, p.w, p.h, 14);
+        ctx.fill();
+        ctx.stroke();
+
+        // Central midrib & lateral leaf veins
+        ctx.strokeStyle = 'rgba(22, 66, 20, 0.55)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(p.x + 12, p.y + p.h / 2);
+        ctx.lineTo(p.x + p.w - 12, p.y + p.h / 2);
+        for (let vx = p.x + 34; vx < p.x + p.w - 30; vx += 36) {
+          ctx.moveTo(vx, p.y + p.h / 2);
+          ctx.lineTo(vx + 10, p.y + 5);
+          ctx.moveTo(vx, p.y + p.h / 2);
+          ctx.lineTo(vx + 10, p.y + p.h - 5);
+        }
+        ctx.stroke();
+      } else if (p.type === 'flower') {
+        // Stem underneath flower platform
+        ctx.fillStyle = '#38b000';
+        ctx.fillRect(p.x + p.w / 2 - 6, p.y + p.h, 12, 600 - (p.y + p.h));
+        ctx.strokeRect(p.x + p.w / 2 - 6, p.y + p.h, 12, 600 - (p.y + p.h));
+
+        const flGrad = ctx.createLinearGradient(p.x, p.y, p.x, p.y + p.h);
+        flGrad.addColorStop(0, '#ff8fab');
+        flGrad.addColorStop(1, '#fb6f92');
+        ctx.fillStyle = flGrad;
+        ctx.beginPath();
+        ctx.roundRect(p.x, p.y, p.w, p.h, 14);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#ffd13b';
+        ctx.beginPath();
+        ctx.roundRect(p.x + 18, p.y + 4, p.w - 36, 9, 5);
+        ctx.fill();
+      } else if (p.type === 'log' || p.type === 'branch') {
+        const barkGrad = ctx.createLinearGradient(p.x, p.y, p.x, p.y + p.h);
+        barkGrad.addColorStop(0, '#a47148');
+        barkGrad.addColorStop(1, '#6f4518');
+        ctx.fillStyle = barkGrad;
+        ctx.beginPath();
+        ctx.roundRect(p.x, p.y, p.w, p.h, 10);
+        ctx.fill();
+        ctx.stroke();
+
+        // Bark wood-grain lines
+        ctx.strokeStyle = 'rgba(45, 24, 8, 0.45)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let bx = p.x + 20; bx < p.x + p.w - 25; bx += 48) {
+          ctx.moveTo(bx, p.y + 9);
+          ctx.lineTo(bx + 26, p.y + 9);
+          ctx.moveTo(bx + 10, p.y + 19);
+          ctx.lineTo(bx + 34, p.y + 19);
+        }
+        ctx.stroke();
+      } else if (p.type === 'water_pond') {
+        const waterGrad = ctx.createLinearGradient(p.x, p.y, p.x, p.y + p.h);
+        waterGrad.addColorStop(0, '#00b4d8');
+        waterGrad.addColorStop(1, '#0077b6');
+        ctx.fillStyle = waterGrad;
+        ctx.fillRect(p.x, p.y, p.w, p.h);
+        ctx.strokeRect(p.x, p.y, p.w, p.h);
+        ctx.fillStyle = '#90e0ef';
+        ctx.fillRect(p.x, p.y, p.w, 12);
+      }
+    }
+
+    // 3. Detailed Hazards (Thorns, Salt Crystals & Sticky Spiderwebs)
+    for (const h of levelData.hazards) {
+      ctx.strokeStyle = '#0d1710';
+      ctx.lineWidth = 2.5;
+      if (h.type === 'salt') {
+        // Crystalline white-blue salt shards
+        ctx.fillStyle = '#e0fbfc';
+        ctx.beginPath();
+        ctx.moveTo(h.x, h.y + h.h);
+        ctx.lineTo(h.x + h.w * 0.22, h.y + 2);
+        ctx.lineTo(h.x + h.w * 0.45, h.y + h.h);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(h.x + h.w * 0.35, h.y + h.h);
+        ctx.lineTo(h.x + h.w * 0.62, h.y - 3);
+        ctx.lineTo(h.x + h.w * 0.92, h.y + h.h);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+      } else if (h.type === 'spiderweb') {
+        // Radial sticky web snare
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.78)';
+        ctx.beginPath();
+        ctx.arc(h.x + h.w / 2, h.y + h.h, h.w * 0.55, Math.PI, 0);
+        ctx.fill(); ctx.stroke();
+        ctx.strokeStyle = 'rgba(120, 140, 160, 0.75)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(h.x + h.w / 2, h.y + h.h); ctx.lineTo(h.x + 4, h.y + 6);
+        ctx.moveTo(h.x + h.w / 2, h.y + h.h); ctx.lineTo(h.x + h.w / 2, h.y + 2);
+        ctx.moveTo(h.x + h.w / 2, h.y + h.h); ctx.lineTo(h.x + h.w - 4, h.y + 6);
+        ctx.stroke();
+      } else {
+        // Crimson botanical thorns with highlights
+        ctx.fillStyle = '#ff2e63';
+        ctx.beginPath();
+        ctx.moveTo(h.x, h.y + h.h);
+        ctx.lineTo(h.x + h.w * 0.25, h.y);
+        ctx.lineTo(h.x + h.w * 0.5, h.y + h.h * 0.7);
+        ctx.lineTo(h.x + h.w * 0.75, h.y);
+        ctx.lineTo(h.x + h.w, h.y + h.h);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      }
+    }
+
+    // 4. Expressive Level Goal Objectives
+    const g = levelData.goal;
+    const goalPulse = Math.sin(worldTime * 6) * 5;
+    ctx.save();
+    const aura = ctx.createRadialGradient(g.x + g.w / 2, g.y + g.h / 2, 8, g.x + g.w / 2, g.y + g.h / 2, 62 + goalPulse);
+    aura.addColorStop(0, 'rgba(255, 209, 59, 0.45)');
+    aura.addColorStop(1, 'rgba(255, 209, 59, 0)');
+    ctx.fillStyle = aura;
+    ctx.beginPath();
+    ctx.arc(g.x + g.w / 2, g.y + g.h / 2, 62 + goalPulse, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (g.type === 'cat') {
+      // Friendly Cartoon Cat with whiskers & swishing tail
+      ctx.strokeStyle = '#0d1710';
+      ctx.lineWidth = 3;
+      ctx.fillStyle = '#ff9f43';
+      ctx.beginPath(); ctx.ellipse(g.x + 60, g.y + 62, 24, 28, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.arc(g.x + 60, g.y + 30, 20, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(g.x + 44, g.y + 18); ctx.lineTo(g.x + 46, g.y + 2); ctx.lineTo(g.x + 56, g.y + 13); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(g.x + 76, g.y + 18); ctx.lineTo(g.x + 74, g.y + 2); ctx.lineTo(g.x + 64, g.y + 13); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#8ce941';
+      ctx.beginPath(); ctx.arc(g.x + 53, g.y + 28, 4.2, 0, Math.PI * 2); ctx.arc(g.x + 67, g.y + 28, 4.2, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#ff5e8e';
+      ctx.beginPath(); ctx.arc(g.x + 60, g.y + 34, 3, 0, Math.PI * 2); ctx.fill();
+    } else if (g.type === 'bird_perch') {
+      // Bright Songbird perched on golden twig
+      ctx.fillStyle = '#38d9ff';
+      ctx.strokeStyle = '#0d1710';
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.ellipse(g.x + 60, g.y + 46, 22, 15, -0.25, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.arc(g.x + 44, g.y + 34, 12, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#ffd13b';
+      ctx.beginPath(); ctx.moveTo(g.x + 33, g.y + 33); ctx.lineTo(g.x + 21, g.y + 37); ctx.lineTo(g.x + 34, g.y + 40); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#0d1710';
+      ctx.beginPath(); ctx.arc(g.x + 42, g.y + 32, 2.5, 0, Math.PI * 2); ctx.fill();
+    } else if (g.type === 'pond') {
+      // Shimmering Water Target Ripples
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.ellipse(g.x + g.w / 2, g.y + 52, 48 + goalPulse * 1.5, 12, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    } else {
+      // Glowing Botanical Beacon Leaf / Blossom Target
+      ctx.fillStyle = '#ffd13b';
+      ctx.strokeStyle = '#0d1710';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(g.x + g.w / 2, g.y + g.h / 2, 25, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#0d1710';
+      ctx.font = '900 13px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('GOAL', g.x + g.w / 2, g.y + g.h / 2 + 5);
+    }
+
+    ctx.fillStyle = '#fff';
+    ctx.strokeStyle = '#0d1710';
+    ctx.lineWidth = 4;
+    ctx.font = '900 13px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.strokeText(g.label, g.x + g.w / 2, g.y - 10);
+    ctx.fillText(g.label, g.x + g.w / 2, g.y - 10);
+    ctx.restore();
+
+    // 5. Checkpoint Flag & Collectible Spores
+    const cp = levelData.checkpoint;
+    if (cp) {
+      ctx.strokeStyle = '#0d1710';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(cp.x + 6, cp.y + cp.h);
+      ctx.lineTo(cp.x + 6, cp.y);
+      ctx.stroke();
+      ctx.fillStyle = cp.reached ? '#8ce941' : '#38d9ff';
+      ctx.beginPath();
+      ctx.moveTo(cp.x + 6, cp.y + 2);
+      ctx.lineTo(cp.x + 30, cp.y + 11);
+      ctx.lineTo(cp.x + 6, cp.y + 20);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    for (const s of levelData.spores) {
+      if (!s.collected) {
+        s.bob += 0.08;
+        const sy = s.y + Math.sin(s.bob) * 5;
+        ctx.fillStyle = '#ffd13b';
+        ctx.strokeStyle = '#0d1710';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(s.x, sy, s.r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(s.x - 3, sy - 3, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // 6. Player Character
+    drawCartoonHost(
+      ctx,
+      player.hostId,
+      player.x + player.w / 2,
+      player.y + player.h / 2,
+      1.05,
+      worldTime * (Math.abs(player.vx) > 0.3 ? 1.5 : 0.4),
+      player.facing
+    );
+
+    // 7. Particles
+    for (const pt of particles) {
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, pt.life);
+      ctx.fillStyle = pt.color;
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    ctx.restore();
+  }
+
+  function loop() {
+    updatePhysics();
+    render();
+    animFrame = requestAnimationFrame(loop);
+  }
+
+  function start(levelIdx) {
+    stop();
+    levelCompleted = false;
+    particles = [];
+    levelData = buildLevelGeometry(levelIdx);
+    resetPlayerToStart();
+    showToast(LEVELS[levelIdx].goalLabel);
+    animFrame = requestAnimationFrame(loop);
+  }
+
+  function stop() {
+    if (animFrame) {
+      cancelAnimationFrame(animFrame);
+      animFrame = null;
+    }
+  }
+
+  // Keyboard Controls (Supports Arrow keys, Q/D, A/D, Space, E)
+  window.addEventListener('keydown', e => {
+    if (!document.getElementById('screen-game').classList.contains('active')) return;
+    const k = e.key.toLowerCase();
+    if (e.code === 'ArrowLeft' || k === 'q' || k === 'a') {
+      input.left = true;
+    }
+    if (e.code === 'ArrowRight' || k === 'd') {
+      input.right = true;
+    }
+    if (e.code === 'Space' || e.code === 'ArrowUp' || k === 'z' || k === 'w') {
+      e.preventDefault();
+      if (!input.jump) input.jumpJustPressed = true;
+      input.jump = true;
+    }
+    if (k === 'e' || e.code === 'ShiftLeft') {
+      if (!input.special) input.specialJustPressed = true;
+      input.special = true;
+    }
+  });
+
+  window.addEventListener('keyup', e => {
+    const k = e.key.toLowerCase();
+    if (e.code === 'ArrowLeft' || k === 'q' || k === 'a') input.left = false;
+    if (e.code === 'ArrowRight' || k === 'd') input.right = false;
+    if (e.code === 'Space' || e.code === 'ArrowUp' || k === 'z' || k === 'w') input.jump = false;
+    if (k === 'e' || e.code === 'ShiftLeft') input.special = false;
+  });
+
+  // Multi-Touch / Pointer Controls
+  function bindTouchButton(btnId, onDown, onUp) {
+    const btn = document.getElementById(btnId);
+    const handleDown = e => {
+      e.preventDefault();
+      btn.classList.add('pressed');
+      onDown();
+    };
+    const handleUp = e => {
+      e.preventDefault();
+      btn.classList.remove('pressed');
+      onUp();
+    };
+    btn.addEventListener('pointerdown', handleDown);
+    btn.addEventListener('pointerup', handleUp);
+    btn.addEventListener('pointercancel', handleUp);
+    btn.addEventListener('pointerleave', handleUp);
+  }
+
+  bindTouchButton('touch-left', () => { input.left = true; }, () => { input.left = false; });
+  bindTouchButton('touch-right', () => { input.right = true; }, () => { input.right = false; });
+  bindTouchButton('touch-jump', () => {
+    if (!input.jump) input.jumpJustPressed = true;
+    input.jump = true;
+  }, () => { input.jump = false; });
+  bindTouchButton('touch-special', () => {
+    if (!input.special) input.specialJustPressed = true;
+    input.special = true;
+  }, () => { input.special = false; });
+
+  return {
+    start,
+    stop,
+    restart() {
+      SoundFX.click();
+      start(state.currentLevelIdx);
+    }
+  };
+})();
+
+function startPlatformLevel() {
+  const level = LEVELS[state.currentLevelIdx];
+  const team = state.teams[state.currentTeamIdx];
+
+  document.getElementById('hud-team').innerHTML = `<span style="color:${team.color}">●</span> ${escapeHTML(team.name)}`;
+  document.getElementById('hud-level').textContent = `Lvl ${level.num}: ${level.hostName}`;
+  document.getElementById('hud-score').textContent = `Sci Score: ${team.totalScore}`;
+  document.getElementById('hud-spores').textContent = `🪙 ${team.coinsCollected}`;
+  document.getElementById('special-lbl').textContent = level.specialLabel;
+  state.levelCompletedViaSkip = false;
+
+  showScreen('screen-game');
+  PlatformerEngine.start(state.currentLevelIdx);
+}
+
+document.getElementById('btn-restart-level').addEventListener('click', () => {
+  PlatformerEngine.restart();
+});
+
+document.getElementById('btn-skip-level').addEventListener('click', () => {
+  SoundFX.goal();
+  state.levelCompletedViaSkip = true;
+  PlatformerEngine.stop();
+  playFinaleCutscene(state.currentLevelIdx, () => {
+    openResultScreen();
+  });
+});
+
+/* ==========================================================================
+   6B. FINALE BIOLOGICAL MECHANISM CUTSCENE ENGINE (ALL 6 LEVELS)
+   ========================================================================== */
+let finaleAnimId = null;
+function playFinaleCutscene(levelIdx, onDone) {
+  const level = LEVELS[levelIdx];
+  const overlay = document.getElementById('finale-overlay');
+  const fCanvas = document.getElementById('finale-canvas');
+  const fCtx = fCanvas.getContext('2d');
+  const continueBtn = document.getElementById('btn-finale-continue');
+
+  document.getElementById('finale-title').textContent = level.finaleTitle;
+  document.getElementById('finale-caption').textContent = level.finaleCaption;
+  overlay.classList.add('active');
+
+  if (finaleAnimId) cancelAnimationFrame(finaleAnimId);
+  let t = 0;
+
+  const finishCutscene = () => {
+    if (finaleAnimId) cancelAnimationFrame(finaleAnimId);
+    finaleAnimId = null;
+    overlay.classList.remove('active');
+    continueBtn.onclick = null;
+    onDone();
+  };
+
+  continueBtn.onclick = () => {
+    SoundFX.click();
+    finishCutscene();
+  };
+
+  function drawFinaleFrame() {
+    t += 0.03;
+    const w = fCanvas.width;
+    const h = fCanvas.height;
+    fCtx.clearRect(0, 0, w, h);
+
+    // Background sky/forest gradient
+    const bg = fCtx.createLinearGradient(0, 0, 0, h);
+    bg.addColorStop(0, '#1e4630');
+    bg.addColorStop(1, '#0e2217');
+    fCtx.fillStyle = bg;
+    fCtx.fillRect(0, 0, w, h);
+
+    fCtx.lineJoin = 'round';
+    fCtx.lineCap = 'round';
+
+    if (levelIdx === 0) {
+      // LEVEL 1: Ant clamped upside-down on elevated leaf, fungal stalk erupts & showers spores
+      fCtx.fillStyle = '#5fb31d';
+      fCtx.strokeStyle = '#0d1710';
+      fCtx.lineWidth = 3;
+      fCtx.beginPath();
+      fCtx.ellipse(240, 68, 175, 22, -0.06, 0, Math.PI * 2);
+      fCtx.fill(); fCtx.stroke();
+
+      // Upside-down ant gripping underside of leaf
+      fCtx.save();
+      fCtx.translate(230, 102);
+      fCtx.scale(1.25, -1.25);
+      drawCartoonHost(fCtx, 'Ant', 0, 0, 1, t * 0.2, 1);
+      fCtx.restore();
+
+      // Growing fungal fruiting stalk
+      const growth = Math.min(1, t * 0.45);
+      fCtx.strokeStyle = '#ff9f43';
+      fCtx.lineWidth = 6;
+      fCtx.beginPath();
+      fCtx.moveTo(242, 114);
+      fCtx.quadraticCurveTo(265, 114 + 45 * growth, 250, 114 + 78 * growth);
+      fCtx.stroke();
+
+      if (growth > 0.7) {
+        fCtx.fillStyle = '#ff6b2b';
+        fCtx.beginPath();
+        fCtx.ellipse(250, 114 + 78 * growth, 10, 7, 0.3, 0, Math.PI * 2);
+        fCtx.fill(); fCtx.stroke();
+
+        // Falling spore shower
+        for (let i = 0; i < 16; i++) {
+          const sy = ((t * 55 + i * 23) % 70) + 175;
+          const sx = 210 + ((i * 37) % 90) + Math.sin(t * 3 + i) * 8;
+          fCtx.fillStyle = '#ffd13b';
+          fCtx.beginPath();
+          fCtx.arc(sx, sy, 3.2, 0, Math.PI * 2);
+          fCtx.fill();
+        }
+      }
+    } else if (levelIdx === 1) {
+      // LEVEL 2: Fly on top of pink flower, halo of white spores firing outward
+      fCtx.fillStyle = '#5fb31d';
+      fCtx.fillRect(234, 130, 12, 110);
+      fCtx.fillStyle = '#ff70a6';
+      fCtx.strokeStyle = '#0d1710';
+      fCtx.lineWidth = 3;
+      fCtx.beginPath();
+      fCtx.ellipse(240, 132, 95, 22, 0, 0, Math.PI * 2);
+      fCtx.fill(); fCtx.stroke();
+
+      drawCartoonHost(fCtx, 'Fly', 238, 106, 1.35, t * 0.4, 1);
+
+      // Expanding spore cannon halo
+      for (let i = 0; i < 18; i++) {
+        const ang = -Math.PI + (Math.PI * i) / 17;
+        const dist = 35 + ((t * 50 + i * 11) % 95);
+        const sx = 235 + Math.cos(ang) * dist;
+        const sy = 104 + Math.sin(ang) * dist * 0.85;
+        fCtx.fillStyle = 'rgba(255, 255, 230, 0.9)';
+        fCtx.beginPath();
+        fCtx.arc(sx, sy, 3.8, 0, Math.PI * 2);
+        fCtx.fill();
+      }
+    } else if (levelIdx === 2) {
+      // LEVEL 3: Brave rodent walking right up to smiling cat with heart/courage icon
+      fCtx.fillStyle = '#5fb31d';
+      fCtx.fillRect(0, 190, w, 50);
+
+      const rx = Math.min(245, 110 + t * 55);
+      drawCartoonHost(fCtx, 'Rodent', rx, 172, 1.3, t, 1);
+
+      // Cat waiting calmly on the right
+      fCtx.fillStyle = '#ff9f43';
+      fCtx.strokeStyle = '#0d1710';
+      fCtx.lineWidth = 3;
+      fCtx.beginPath(); fCtx.ellipse(355, 155, 32, 38, 0, 0, Math.PI * 2); fCtx.fill(); fCtx.stroke();
+      fCtx.beginPath(); fCtx.arc(355, 112, 26, 0, Math.PI * 2); fCtx.fill(); fCtx.stroke();
+      fCtx.beginPath(); fCtx.moveTo(334, 96); fCtx.lineTo(336, 74); fCtx.lineTo(349, 90); fCtx.fill(); fCtx.stroke();
+      fCtx.beginPath(); fCtx.moveTo(376, 96); fCtx.lineTo(374, 74); fCtx.lineTo(361, 90); fCtx.fill(); fCtx.stroke();
+      fCtx.fillStyle = '#8ce941';
+      fCtx.beginPath(); fCtx.arc(345, 110, 5, 0, Math.PI * 2); fCtx.arc(365, 110, 5, 0, Math.PI * 2); fCtx.fill();
+
+      // Exclamation / Boldness aura over rodent
+      fCtx.fillStyle = '#ff5e8e';
+      fCtx.font = '900 18px sans-serif';
+      fCtx.fillText('NO FEAR!', rx - 35, 128 + Math.sin(t * 6) * 4);
+    } else if (levelIdx === 3) {
+      // LEVEL 4: Snail on high sunlit leaf with brightly pulsating eyestalks + bird swooping in
+      fCtx.fillStyle = 'rgba(255, 225, 90, 0.18)';
+      fCtx.beginPath(); fCtx.moveTo(360, 0); fCtx.lineTo(150, 240); fCtx.lineTo(340, 240); fCtx.fill();
+
+      fCtx.fillStyle = '#70e000';
+      fCtx.strokeStyle = '#0d1710';
+      fCtx.lineWidth = 3;
+      fCtx.beginPath(); fCtx.ellipse(220, 178, 130, 20, 0, 0, Math.PI * 2); fCtx.fill(); fCtx.stroke();
+
+      drawCartoonHost(fCtx, 'Snail', 210, 146, 1.45, t * 1.8, 1);
+
+      // Cartoon bird flying toward the caterpillar-like eyestalks
+      const bx = 430 - ((t * 65) % 150);
+      const by = 68 + Math.sin(t * 7) * 8;
+      fCtx.fillStyle = '#38d9ff';
+      fCtx.strokeStyle = '#0d1710';
+      fCtx.lineWidth = 3;
+      fCtx.beginPath(); fCtx.ellipse(bx, by, 24, 16, -0.2, 0, Math.PI * 2); fCtx.fill(); fCtx.stroke();
+      fCtx.fillStyle = '#ffd13b';
+      fCtx.beginPath(); fCtx.moveTo(bx - 22, by); fCtx.lineTo(bx - 36, by + 5); fCtx.lineTo(bx - 21, by + 9); fCtx.fill(); fCtx.stroke();
+    } else if (levelIdx === 4) {
+      // LEVEL 5: Cricket in swamp pond water with long horsehair worm emerging & swimming
+      fCtx.fillStyle = '#00b4d8';
+      fCtx.fillRect(0, 135, w, 105);
+      fCtx.fillStyle = '#90e0ef';
+      fCtx.fillRect(0, 135, w, 10);
+
+      drawCartoonHost(fCtx, 'Cricket', 175, 148, 1.3, t * 0.5, 1);
+
+      // Emerging coiling adult horsehair worm
+      fCtx.strokeStyle = '#e056fd';
+      fCtx.lineWidth = 7;
+      fCtx.beginPath();
+      fCtx.moveTo(155, 152);
+      for (let x = 0; x <= 180; x += 10) {
+        const wy = 165 + Math.sin(x * 0.08 - t * 6) * 18;
+        fCtx.lineTo(155 + x, wy);
+      }
+      fCtx.stroke();
+    } else if (levelIdx === 5) {
+      // LEVEL 6: Caterpillar on top jungle branch releasing viral occlusion droplets
+      fCtx.fillStyle = '#8c583a';
+      fCtx.strokeStyle = '#0d1710';
+      fCtx.lineWidth = 3;
+      fCtx.beginPath(); fCtx.roundRect(90, 92, 300, 24, 12); fCtx.fill(); fCtx.stroke();
+
+      drawCartoonHost(fCtx, 'Caterpillar', 240, 72, 1.35, t * 0.5, 1);
+
+      // Raining cyan/gold viral particles onto lower leaves
+      for (let i = 0; i < 18; i++) {
+        const vy = ((t * 60 + i * 19) % 105) + 118;
+        const vx = 140 + ((i * 43) % 200);
+        fCtx.fillStyle = i % 2 === 0 ? '#48dbfb' : '#ffd13b';
+        fCtx.beginPath();
+        fCtx.arc(vx, vy, 3.5, 0, Math.PI * 2);
+        fCtx.fill();
+      }
+    } else {
+      // BONUS LEVEL 7: Blocked Flea regurgitating Yersinia pestis bacteria during feeding
+      fCtx.fillStyle = '#ff8fab';
+      fCtx.fillRect(0, 155, w, 85);
+
+      drawCartoonHost(fCtx, 'Flea', 195, 134, 1.45, t * 0.8, 1);
+
+      // Green bacterial biofilm plug & regurgitated rod bacteria
+      fCtx.fillStyle = '#a3cb38';
+      fCtx.beginPath();
+      fCtx.arc(210, 134, 7, 0, Math.PI * 2);
+      fCtx.fill();
+
+      for (let i = 0; i < 14; i++) {
+        const bx = 235 + ((t * 55 + i * 17) % 130);
+        const by = 142 + Math.sin(t * 5 + i) * 14;
+        fCtx.fillStyle = '#c4e538';
+        fCtx.fillRect(bx, by, 9, 4);
+      }
+    }
+
+    finaleAnimId = requestAnimationFrame(drawFinaleFrame);
+  }
+
+  drawFinaleFrame();
+}
+
+/* ==========================================================================
+   7. SCIENTIFIC RESULT & LEADERBOARD SCREENS
+   ========================================================================== */
+function openResultScreen() {
+  const res = state.lastTurnResult;
+  const team = state.teams[state.currentTeamIdx];
+
+  document.getElementById('res-turn-banner').innerHTML = `
+    <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${team.color};"></span>
+    <span>${escapeHTML(team.name)} • Current Score: <b>${team.totalScore} pts</b></span>
+  `;
+
+  const bannerBox = document.getElementById('res-banner-box');
+  bannerBox.className = 'result-banner ' + (
+    res.matchType === 'PERFECT' ? 'result-perfect' :
+    res.matchType === 'PARTIAL' ? 'result-partial' : 'result-wrong'
+  );
+
+  document.getElementById('res-points-earned').textContent = `+${res.points} SCIENTIFIC POINTS`;
+  document.getElementById('res-match-title').textContent =
+    res.matchType === 'PERFECT' ? 'PERFECT MATCH!' :
+    res.matchType === 'PARTIAL' ? 'PARTIAL MATCH (RIGHT GROUP!)' : 'INCORRECT BIOLOGICAL GROUP';
+
+  document.getElementById('res-selection-summary').innerHTML =
+    `You selected: <b><i>${res.chosenOrg.name}</i></b> (${res.chosenOrg.group})`;
+
+  document.getElementById('res-host-name').textContent = res.level.hostName;
+  document.getElementById('res-correct-org').textContent = res.correctOrg.name;
+  document.getElementById('res-bio-group').textContent = res.correctOrg.group;
+  document.getElementById('res-science-text').textContent = res.level.scienceExplanation;
+
+  const mustRetryLevel = (res.matchType === 'WRONG' && !state.levelCompletedViaSkip);
+  const retryNotice = document.getElementById('res-retry-notice');
+  if (retryNotice) retryNotice.style.display = mustRetryLevel ? 'block' : 'none';
+
+  const isLastMainLevel = state.currentLevelIdx === 5;
+  const isBonusLevel = state.currentLevelIdx === 6;
+  const nextBtn = document.getElementById('btn-next-turn');
+
+  // Check if any player/team reached 600+ total points (scientific + coins) to unlock Bonus Level 7
+  const topLeaderIdx = state.teams.reduce((bestIdx, t, i, arr) => {
+    const currScore = t.totalScore + t.coinsCollected;
+    const bestScore = arr[bestIdx].totalScore + arr[bestIdx].coinsCollected;
+    return currScore > bestScore ? i : bestIdx;
+  }, 0);
+  const topLeaderScore = state.teams[topLeaderIdx].totalScore + state.teams[topLeaderIdx].coinsCollected;
+  const unlocksBonus = isLastMainLevel && topLeaderScore >= 600;
+
+  if (mustRetryLevel) {
+    nextBtn.textContent = `↻ RETRY LEVEL ${state.currentLevelIdx + 1} (${team.name.toUpperCase()})`;
+  } else if (unlocksBonus) {
+    nextBtn.textContent = `🌟 UNLOCK SECRET BONUS LEVEL (${state.teams[topLeaderIdx].name.toUpperCase()}) →`;
+  } else if (isLastMainLevel || isBonusLevel) {
+    nextBtn.textContent = '🏆 VIEW FINAL LEADERBOARD →';
+  } else {
+    const nextTeamIdx = (state.currentTeamIdx + 1) % state.teams.length;
+    const nextTeam = state.teams[nextTeamIdx];
+    nextBtn.textContent = `NEXT: LEVEL ${state.currentLevelIdx + 2} (${nextTeam.name.toUpperCase()}) →`;
+  }
+
+  showScreen('screen-result');
+}
+
+document.getElementById('btn-next-turn').addEventListener('click', () => {
+  SoundFX.click();
+  const res = state.lastTurnResult;
+  const mustRetryLevel = (res && res.matchType === 'WRONG' && !state.levelCompletedViaSkip);
+
+  if (mustRetryLevel) {
+    openOrganismSelection();
+    return;
+  }
+
+  if (state.currentLevelIdx < 5) {
+    state.currentLevelIdx++;
+    state.currentTeamIdx = (state.currentTeamIdx + 1) % state.teams.length;
+    openHostIntro();
+  } else if (state.currentLevelIdx === 5) {
+    const topLeaderIdx = state.teams.reduce((bestIdx, t, i, arr) => {
+      const currScore = t.totalScore + t.coinsCollected;
+      const bestScore = arr[bestIdx].totalScore + arr[bestIdx].coinsCollected;
+      return currScore > bestScore ? i : bestIdx;
+    }, 0);
+    const topLeaderScore = state.teams[topLeaderIdx].totalScore + state.teams[topLeaderIdx].coinsCollected;
+
+    if (topLeaderScore >= 600) {
+      state.currentLevelIdx = 6;
+      state.currentTeamIdx = topLeaderIdx;
+      openHostIntro();
+    } else {
+      openLeaderboard();
+    }
+  } else {
+    openLeaderboard();
+  }
+});
+
+let confettiAnimId = null;
+function openLeaderboard() {
+  SoundFX.victory();
+  const sorted = [...state.teams].sort((a, b) => {
+    const grandA = a.totalScore + a.coinsCollected;
+    const grandB = b.totalScore + b.coinsCollected;
+    return grandB - grandA || b.totalScore - a.totalScore;
+  });
+  const topGrand = sorted[0].totalScore + sorted[0].coinsCollected;
+  const winners = sorted
+    .filter(t => (t.totalScore + t.coinsCollected) === topGrand)
+    .map(t => t.name)
+    .join(' & ');
+
+  document.getElementById('champion-banner').textContent =
+    `🏆 ${winners.toUpperCase()} — MASTER PARASITE: THE ULTIMATE HOST MANIPULATOR! (${sorted[0].totalScore} SCI + ${sorted[0].coinsCollected} COINS = ${topGrand} PTS)`;
+
+  const tbody = document.getElementById('lb-tbody');
+  tbody.innerHTML = '';
+
+  sorted.forEach((t, rankIdx) => {
+    const perfectCount = t.levelScores.filter(s => s === 100).length;
+    const partialCount = t.levelScores.filter(s => s === 50).length;
+    const wrongCount = t.levelScores.filter(s => s === 0).length;
+    const grandTotal = t.totalScore + t.coinsCollected;
+
+    const tr = document.createElement('tr');
+    if (rankIdx === 0) tr.className = 'winner-row';
+    tr.innerHTML = `
+      <td style="font-weight:900; font-size:1.05rem;">${rankIdx === 0 ? '👑 #1' : `#${rankIdx + 1}`}</td>
+      <td style="text-align:left; font-weight:900;">
+        <span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:${t.color};margin-right:6px;"></span>
+        ${escapeHTML(t.name)}
+      </td>
+      ${t.levelScores.slice(0, 6).map(sc => `<td>${sc !== null ? sc : '-'}</td>`).join('')}
+      <td style="color:#8ce941; font-weight:900;">${perfectCount}</td>
+      <td style="color:#ffd13b; font-weight:900;">${partialCount}</td>
+      <td style="color:#ff5e8e; font-weight:900;">${wrongCount}</td>
+      <td style="font-weight:900; color:#38d9ff;">${t.totalScore}</td>
+      <td style="font-weight:900; color:#ffd13b;">+${t.coinsCollected}</td>
+      <td style="font-weight:900; font-size:1.1rem; color:var(--accent-lime);">${grandTotal}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  showScreen('screen-leaderboard');
+  startConfetti();
+}
+
+function startConfetti() {
+  if (confettiAnimId) cancelAnimationFrame(confettiAnimId);
+  const canvas = document.getElementById('confetti-canvas');
+  const ctx = canvas.getContext('2d');
+  const pieces = Array.from({ length: 110 }, () => ({
+    x: Math.random() * window.innerWidth,
+    y: Math.random() * -window.innerHeight,
+    w: 8 + Math.random() * 8,
+    h: 5 + Math.random() * 6,
+    vy: 2 + Math.random() * 3.5,
+    vx: -1.5 + Math.random() * 3,
+    rot: Math.random() * Math.PI * 2,
+    vrot: -0.08 + Math.random() * 0.16,
+    color: ['#8ce941', '#ffd13b', '#38d9ff', '#ff5e8e', '#ff9f43'][Math.floor(Math.random() * 5)]
+  }));
+
+  function loop() {
+    if (!document.getElementById('screen-leaderboard').classList.contains('active')) return;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    pieces.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.rot += p.vrot;
+      if (p.y > canvas.height + 20) {
+        p.y = -20;
+        p.x = Math.random() * canvas.width;
+      }
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      ctx.restore();
+    });
+
+    confettiAnimId = requestAnimationFrame(loop);
+  }
+  loop();
+}
+
+document.getElementById('btn-play-again').addEventListener('click', () => {
+  SoundFX.click();
+  if (confettiAnimId) cancelAnimationFrame(confettiAnimId);
+  renderTeamInputs();
+  showScreen('screen-teams');
+});
+
+function escapeHTML(str) {
+  return str.replace(/[&<>"']/g, m => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[m]));
+}
+</script>
+</body>
+</html>
